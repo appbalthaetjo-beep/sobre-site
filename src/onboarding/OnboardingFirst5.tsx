@@ -1,5 +1,5 @@
 ﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, type Variants } from "framer-motion";
 import "./onboarding-first5.css";
 
 type StepId =
@@ -101,8 +101,8 @@ const STEP_ORDER: StepId[] = [
   "personal-goals",
   "commitment-signature",
   "rate-us",
-  "free-trial",
   "personalized-summary",
+  "free-trial",
   "trial-reminder",
 ];
 
@@ -115,7 +115,7 @@ const Logo = () => (
   />
 );
 
-const defaultPageVariants = {
+const defaultPageVariants: Variants = {
   enter: (direction: 1 | -1) => ({
     x: direction > 0 ? 40 : -40,
     opacity: 0,
@@ -124,7 +124,7 @@ const defaultPageVariants = {
     x: 0,
     opacity: 1,
     transition: {
-      type: "spring",
+      type: "spring" as const,
       stiffness: 360,
       damping: 34,
       mass: 0.9,
@@ -137,8 +137,8 @@ const defaultPageVariants = {
   }),
 };
 
-const cinematicPageVariants = {
-  enter: (_direction: 1 | -1) => ({
+const cinematicPageVariants: Variants = {
+  enter: () => ({
     opacity: 0,
     scale: 0.985,
     y: 14,
@@ -151,7 +151,7 @@ const cinematicPageVariants = {
     filter: "blur(0px)",
     transition: { duration: 0.52, ease: [0.22, 1, 0.36, 1] as const },
   },
-  exit: (_direction: 1 | -1) => ({
+  exit: () => ({
     opacity: 0,
     scale: 1.01,
     y: -10,
@@ -257,7 +257,6 @@ function useTypewriterMessages(
 
   useEffect(() => {
     return () => clearAllTimers();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -989,8 +988,8 @@ const CustomQuestion13: React.FC<CustomProps> = ({ goNext, goBack, answers, setA
       quizAnswers: { ...prev.quizAnswers, recent_effects: id },
     }));
 
-    leaveTimer.current && window.clearTimeout(leaveTimer.current);
-    nextTimer.current && window.clearTimeout(nextTimer.current);
+    if (leaveTimer.current) window.clearTimeout(leaveTimer.current);
+    if (nextTimer.current) window.clearTimeout(nextTimer.current);
 
     leaveTimer.current = window.setTimeout(() => setIsLeaving(true), 800);
     nextTimer.current = window.setTimeout(() => goNext(), 1200);
@@ -2168,79 +2167,270 @@ const CustomRateUs: React.FC<CustomProps> = ({ goNext }) => {
   );
 };
 
-const CustomFreeTrial: React.FC<CustomProps> = ({ goBack, goNext }) => (
-  <div className="onb-screen onb-gradient-gold onb-free-screen">
-    <div className="onb-question-header">
-      <button className="onb-back-btn onb-back-btn-dark" onClick={goBack} aria-label="Retour">
-        {"\u2190"}
-      </button>
-      <div className="onb-header-spacer" />
-      <div className="onb-header-spacer" />
-    </div>
+const CustomFreeTrial: React.FC<CustomProps> = ({ goBack, goNext }) => {
+  const [phase, setPhase] = useState<"scratch" | "reveal">("scratch");
+  const [isScratching, setIsScratching] = useState(false);
+  const [scratchProgress, setScratchProgress] = useState(0);
+  const [isRevealing, setIsRevealing] = useState(false);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const scratchHostRef = useRef<HTMLDivElement | null>(null);
+  const scratchCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const lastPointRef = useRef<{ x: number; y: number } | null>(null);
+  const scratchedCellsRef = useRef<Uint8Array | null>(null);
+  const scratchedCountRef = useRef(0);
+  const revealedRef = useRef(false);
 
-    <div className="onb-free-main">
-      <div className="onb-free-pill">🎁 Essai gratuit</div>
-      <img src="https://i.imgur.com/7ZJ96b0.png" alt="" className="onb-free-hero" />
-      <div className="onb-free-copy">
-        <h2>
-          SOBRE est gratuit
-          <br />à essayer pour toi.
-        </h2>
-        <p>
-          On dépend du soutien de personnes comme toi pour continuer à développer un outil qui aide à arrêter la
-          pornographie et à reprendre le contrôle.
-        </p>
-      </div>
-    </div>
+  const GRID_SIZE = 48;
+  const REVEAL_THRESHOLD = 42;
+  const BRUSH_RADIUS = 22;
 
-    <button className="onb-free-btn" onClick={goNext}>
-      Ça marche
-    </button>
-  </div>
-);
+  const setupScratchLayer = useCallback(() => {
+    const host = scratchHostRef.current;
+    const canvas = scratchCanvasRef.current;
+    if (!host || !canvas) return;
 
-const CustomReferralCode: React.FC<CustomProps> = ({ goBack, goNext, answers, setAnswers }) => {
-  const [code, setCode] = useState(answers.referralCode ?? "");
+    const rect = host.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    const width = Math.max(1, Math.floor(rect.width));
+    const height = Math.max(1, Math.floor(rect.height));
 
-  const saveAndNext = () => {
-    setAnswers((prev) => ({ ...prev, referralCode: code.trim().toUpperCase() }));
-    goNext();
+    canvas.width = Math.floor(width * dpr);
+    canvas.height = Math.floor(height * dpr);
+    canvas.style.width = `${width}px`;
+    canvas.style.height = `${height}px`;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.globalCompositeOperation = "source-over";
+    ctx.clearRect(0, 0, width, height);
+
+    const gradient = ctx.createLinearGradient(0, 0, width, height);
+    gradient.addColorStop(0, "#2e2e31");
+    gradient.addColorStop(0.5, "#39393d");
+    gradient.addColorStop(1, "#2b2b2e");
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, width, height);
+
+    ctx.strokeStyle = "rgba(255,255,255,0.08)";
+    ctx.lineWidth = 1;
+    for (let y = 0; y < height; y += 12) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(width, y + 6);
+      ctx.stroke();
+    }
+
+    scratchedCellsRef.current = new Uint8Array(GRID_SIZE * GRID_SIZE);
+    scratchedCountRef.current = 0;
+    setScratchProgress(0);
+    revealedRef.current = false;
+  }, []);
+
+  useEffect(() => {
+    if (phase !== "scratch") return;
+    setupScratchLayer();
+    const onResize = () => setupScratchLayer();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [phase, setupScratchLayer]);
+
+  const getCanvasPoint = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    const canvas = scratchCanvasRef.current;
+    if (!canvas) return null;
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: event.clientX - rect.left,
+      y: event.clientY - rect.top,
+    };
+  };
+
+  const updateProgressAt = (x: number, y: number, radius: number) => {
+    const canvas = scratchCanvasRef.current;
+    const cells = scratchedCellsRef.current;
+    if (!canvas || !cells) return;
+
+    const w = canvas.clientWidth;
+    const h = canvas.clientHeight;
+    if (!w || !h) return;
+
+    const minX = Math.max(0, Math.floor(((x - radius) / w) * GRID_SIZE));
+    const maxX = Math.min(GRID_SIZE - 1, Math.floor(((x + radius) / w) * GRID_SIZE));
+    const minY = Math.max(0, Math.floor(((y - radius) / h) * GRID_SIZE));
+    const maxY = Math.min(GRID_SIZE - 1, Math.floor(((y + radius) / h) * GRID_SIZE));
+
+    for (let gy = minY; gy <= maxY; gy += 1) {
+      for (let gx = minX; gx <= maxX; gx += 1) {
+        const cellCenterX = ((gx + 0.5) / GRID_SIZE) * w;
+        const cellCenterY = ((gy + 0.5) / GRID_SIZE) * h;
+        const dx = cellCenterX - x;
+        const dy = cellCenterY - y;
+        if (dx * dx + dy * dy <= radius * radius) {
+          const idx = gy * GRID_SIZE + gx;
+          if (!cells[idx]) {
+            cells[idx] = 1;
+            scratchedCountRef.current += 1;
+          }
+        }
+      }
+    }
+
+    const pct = (scratchedCountRef.current / cells.length) * 100;
+    setScratchProgress(pct);
+    if (pct >= REVEAL_THRESHOLD && !revealedRef.current) {
+      revealedRef.current = true;
+      setIsRevealing(true);
+      window.setTimeout(() => {
+        setPhase("reveal");
+        setIsScratching(false);
+        setIsRevealing(false);
+        setIsDrawing(false);
+      }, 520);
+    }
+  };
+
+  const eraseAt = (x: number, y: number, from?: { x: number; y: number } | null) => {
+    const canvas = scratchCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    ctx.globalCompositeOperation = "destination-out";
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.lineWidth = BRUSH_RADIUS * 2;
+
+    if (from) {
+      ctx.beginPath();
+      ctx.moveTo(from.x, from.y);
+      ctx.lineTo(x, y);
+      ctx.stroke();
+    } else {
+      ctx.beginPath();
+      ctx.arc(x, y, BRUSH_RADIUS, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    updateProgressAt(x, y, BRUSH_RADIUS + 4);
+  };
+
+  const handleBack = () => {
+    if (phase === "reveal") {
+      setPhase("scratch");
+      setIsScratching(false);
+      setScratchProgress(0);
+      setIsRevealing(false);
+      setIsDrawing(false);
+      return;
+    }
+    goBack();
+  };
+
+  const onScratchStart = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    if (isRevealing) return;
+    const point = getCanvasPoint(event);
+    if (!point) return;
+    setIsDrawing(true);
+    setIsScratching(true);
+    lastPointRef.current = point;
+    eraseAt(point.x, point.y);
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+
+  const onScratchMove = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    if (!isDrawing || isRevealing) return;
+    const point = getCanvasPoint(event);
+    if (!point) return;
+    eraseAt(point.x, point.y, lastPointRef.current);
+    lastPointRef.current = point;
+  };
+
+  const onScratchEnd = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    setIsDrawing(false);
+    setIsScratching(false);
+    lastPointRef.current = null;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
   };
 
   return (
-    <div className="onb-screen onb-black onb-ref-screen">
+    <div className="onb-screen onb-black onb-offer-screen">
       <div className="onb-question-header">
-        <button className="onb-back-btn" onClick={goBack} aria-label="Retour">
+        <button className="onb-back-btn" onClick={handleBack} aria-label="Retour">
           {"\u2190"}
         </button>
         <div className="onb-header-spacer" />
         <div className="onb-header-spacer" />
       </div>
 
-      <div className="onb-ref-main">
-        <h2>Avez-vous un code de parrainage ?</h2>
-        <p>Vous pouvez passer cette étape.</p>
-        <input
-          className="onb-input"
-          placeholder="Code de parrainage"
-          value={code}
-          onChange={(e) => setCode(e.target.value)}
-        />
-      </div>
+      {phase === "scratch" ? (
+        <div className="onb-offer-main">
+          <div className="onb-offer-pill">OFFRE SOBRE</div>
+          <h2 className="onb-offer-title">
+            Gratte ton ticket
+            <br />
+            et découvre ton offre
+          </h2>
+          <p className="onb-offer-subtitle">Une réduction exclusive t’attend pour démarrer maintenant.</p>
 
-      <div className="onb-ref-bottom">
-        <button className="onb-skip" onClick={goNext}>
-          Passer
+          <button
+            className={`onb-offer-scratch ${isScratching ? "is-scratching" : ""} ${isRevealing ? "is-revealing" : ""}`}
+            aria-label="Gratter le ticket"
+            ref={scratchHostRef}
+          >
+            <span className="onb-offer-scratch-progress">{Math.floor(scratchProgress)}%</span>
+            <span className="onb-offer-scratch-text">Gratte ici</span>
+            <span className="onb-offer-scratch-shine" />
+            <canvas
+              ref={scratchCanvasRef}
+              className="onb-offer-scratch-canvas"
+              onPointerDown={onScratchStart}
+              onPointerMove={onScratchMove}
+              onPointerUp={onScratchEnd}
+              onPointerCancel={onScratchEnd}
+              onPointerLeave={onScratchEnd}
+            />
+          </button>
+        </div>
+      ) : (
+        <div className="onb-offer-main onb-offer-main-revealed">
+          <div className="onb-offer-pill">OFFRE REVELEE</div>
+          <h2 className="onb-offer-title">
+            Bravo, tu as
+            <br />
+            -50% de réduction
+          </h2>
+
+          <div className="onb-offer-card onb-offer-card-pop">
+            <div className="onb-offer-card-main">50%</div>
+            <div className="onb-offer-card-sub">OFF</div>
+            <div className="onb-offer-card-foot">OFFRE LIMITEE</div>
+            <span className="onb-offer-spark onb-offer-spark-1" />
+            <span className="onb-offer-spark onb-offer-spark-2" />
+            <span className="onb-offer-spark onb-offer-spark-3" />
+          </div>
+        </div>
+      )}
+
+      {phase === "reveal" && (
+        <button className="onb-btn-gold onb-offer-btn" onClick={goNext}>
+          Récupérer ma réduction
         </button>
-        <button className="onb-btn-white" onClick={saveAndNext}>
-          Suivant
-        </button>
-      </div>
+      )}
     </div>
   );
 };
 
 const CustomPersonalizedSummary: React.FC<CustomProps> = ({ goNext, answers }) => {
+  type RoadmapItem = {
+    icon: string;
+    title: string;
+    description: string;
+    highlight?: boolean;
+  };
+
   const userName = answers.personalData?.firstName?.trim() || "Champion";
   const targetDate = useMemo(() => {
     const d = new Date();
@@ -2253,7 +2443,7 @@ const CustomPersonalizedSummary: React.FC<CustomProps> = ({ goNext, answers }) =
     });
   }, []);
 
-  const roadmap = useMemo(() => [
+  const roadmap = useMemo<RoadmapItem[]>(() => [
     {
       icon: "🗓️",
       title: "Jour 0 — Préparer ton espace",
@@ -2315,7 +2505,7 @@ const CustomPersonalizedSummary: React.FC<CustomProps> = ({ goNext, answers }) =
         "Les envies sont encore là, mais plus faciles à gérer. Énergie, confiance et motivation se renforcent : c'est ton premier vrai goût de liberté.",
       highlight: true,
     },
-   ] as const, []);
+   ], []);
 
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const cardRefs = useRef<Array<HTMLElement | null>>([]);
@@ -2450,26 +2640,85 @@ const CustomPersonalizedSummary: React.FC<CustomProps> = ({ goNext, answers }) =
       >
         <div className="onb-summary-pill">✅ Sans engagement, annule quand tu veux</div>
         <button className="onb-btn-gold" onClick={goNext}>
-          Essayer pour 0€
+          Continuer
         </button>
       </motion.div>
     </div>
   );
 };
 
-const CustomTrialReminder: React.FC<CustomProps> = ({ goBack, goNext }) => {
+const CustomTrialReminder: React.FC<CustomProps> = ({ goBack }) => {
   const [loading, setLoading] = useState(false);
+  const [secondsLeft, setSecondsLeft] = useState(10 * 60);
+  const [selectedPlan, setSelectedPlan] = useState<"month" | "year">("month");
+  const [showSpecialOffer, setShowSpecialOffer] = useState(false);
 
-  const handleContinue = () => {
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setSecondsLeft((prev) => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    if (secondsLeft === 0) {
+      setShowSpecialOffer(true);
+    }
+  }, [secondsLeft]);
+
+  const minutes = String(Math.floor(secondsLeft / 60)).padStart(2, "0");
+  const seconds = String(secondsLeft % 60).padStart(2, "0");
+
+  const offerLevel = showSpecialOffer ? "60" : "50";
+  const prices = offerLevel === "50"
+    ? selectedPlan === "month"
+      ? { original: "24,99€", discounted: "12,99€ / mois", saved: "12,00€" }
+      : { original: "74,99€", discounted: "37,99€ / an", saved: "37,00€" }
+    : selectedPlan === "month"
+      ? { original: "24,99€", discounted: "9,99€ / mois", saved: "15,00€" }
+      : { original: "74,99€", discounted: "29,99€ / an", saved: "45,00€" };
+
+  const startCheckout = async (preferredMethod: "paypal" | "card") => {
     if (loading) return;
     setLoading(true);
-    window.setTimeout(() => goNext(), 900);
+
+    try {
+      const apiBase = (import.meta.env.VITE_API_BASE_URL || "http://localhost:4242").replace(/\/+$/, "");
+      const res = await fetch(`${apiBase}/api/create-checkout-session`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          plan: selectedPlan,
+          offer: offerLevel,
+          preferredMethod,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data?.url) {
+        throw new Error(data?.error || "Erreur checkout");
+      }
+
+      window.location.href = data.url;
+    } catch (err) {
+      console.error("Checkout error:", err);
+      setLoading(false);
+      alert("Impossible de lancer le paiement pour le moment.");
+    }
+  };
+
+  const handleExitIntent = () => {
+    if (showSpecialOffer) {
+      goBack();
+      return;
+    }
+    setShowSpecialOffer(true);
   };
 
   return (
     <div className="onb-screen onb-black onb-trial-screen">
       <div className="onb-question-header">
-        <button className="onb-back-btn" onClick={goBack} aria-label="Retour">
+        <button className="onb-back-btn" onClick={handleExitIntent} aria-label="Retour">
           {"\u2190"}
         </button>
         <div className="onb-header-spacer" />
@@ -2477,20 +2726,144 @@ const CustomTrialReminder: React.FC<CustomProps> = ({ goBack, goNext }) => {
       </div>
 
       <div className="onb-trial-main">
-        <h2>
-          {"On t\u2019enverra un rappel"}
-          <br />
-          {"avant la fin de ton essai gratuit"}
-        </h2>
-        <div className="onb-trial-bell">
-          {"\uD83D\uDD14"} <span>1</span>
-        </div>
-        <p>{"\u2713 Aucun paiement maintenant"}</p>
+        {showSpecialOffer && (
+          <section className="onb-special-offer-head">
+            <p className="onb-special-prev">
+              Remise précédente: <s>50%</s>
+            </p>
+            <h2>Offre spéciale -60% activée</h2>
+            <p>Tu allais quitter. On te débloque la meilleure offre maintenant.</p>
+          </section>
+        )}
+
+        <section className="onb-paywall-timer-wrap">
+          <p className="onb-paywall-timer-kicker">Offre -{offerLevel}% expirera dans</p>
+          <div className="onb-paywall-timer">
+            <span>{minutes}</span>:<span>{seconds}</span>
+          </div>
+        </section>
+
+        <section className="onb-paywall-hero">
+          <h2>{showSpecialOffer ? "Passe au plan SOBRE avec -60%" : "Ton plan SOBRE personnalisé"}</h2>
+          <p>Un parcours guidé pour reprendre le contrôle durablement.</p>
+          <div className="onb-paywall-compare">
+            <article>
+              <h3>Maintenant</h3>
+              <p>Motivation instable</p>
+              <p>Envies difficiles à gérer</p>
+            </article>
+            <article>
+              <h3>Objectif</h3>
+              <p>Routines solides</p>
+              <p>Progression claire et mesurable</p>
+            </article>
+          </div>
+        </section>
+
+        <section className="onb-paywall-list">
+          <h3>Ce que tu débloques avec SOBRE</h3>
+          <p>✅ Suivi quotidien</p>
+          <p>✅ Outils anti-envies</p>
+          <p>✅ Progression mesurable</p>
+          <p>✅ Plan étape par étape sur 4 semaines</p>
+        </section>
+
+        <section className="onb-paywall-proof">
+          <h3>Ils avancent avec SOBRE</h3>
+          <div className="onb-paywall-reviews">
+            <blockquote>“En quelques jours j’ai retrouvé de la clarté.” ★★★★★</blockquote>
+            <blockquote>“Le suivi quotidien m’aide à tenir.” ★★★★★</blockquote>
+            <blockquote>“Simple, concret, efficace.” ★★★★★</blockquote>
+          </div>
+        </section>
+
+        <section className="onb-paywall-pricing">
+          <h3>Choisis ton plan</h3>
+
+          <article
+            className={`onb-paywall-plan ${selectedPlan === "month" ? "is-selected" : ""}`}
+            onClick={() => setSelectedPlan("month")}
+          >
+            <div>
+              <strong>Plan Mensuel</strong>
+              <p>
+                <s>24,99€</s> <span>-${offerLevel}%</span>
+              </p>
+            </div>
+            <div className="onb-paywall-price">{offerLevel === "50" ? "12,99€ / mois" : "9,99€ / mois"}</div>
+          </article>
+
+          <article
+            className={`onb-paywall-plan ${selectedPlan === "year" ? "is-selected" : ""}`}
+            onClick={() => setSelectedPlan("year")}
+          >
+            <div>
+              <strong>Plan Annuel</strong>
+              <p>
+                <s>74,99€</s> <span>-${offerLevel}%</span>
+              </p>
+            </div>
+            <div className="onb-paywall-price">{offerLevel === "50" ? "37,99€ / an" : "29,99€ / an"}</div>
+          </article>
+
+          <p className="onb-paywall-safe">🔒 Paiement sécurisé • Annulation facile</p>
+        </section>
+
+        <section className="onb-checkout-block">
+          <div className="onb-checkout-reserved">⏰ Remise réservée pendant {minutes}:{seconds}</div>
+
+          <h3>
+            Rejoins plus de <span>700 000 utilisateurs</span>
+            <br />
+            qui reprennent le contrôle avec SOBRE
+          </h3>
+
+          <div className="onb-checkout-card">
+            <h4>Safe checkout</h4>
+
+            <div className="onb-checkout-row">
+              <span>SOBRE Premium</span>
+              <strong>{prices.original}</strong>
+            </div>
+            <div className="onb-checkout-row is-discount">
+              <span>Offre d’introduction -{offerLevel}%</span>
+              <strong>-{prices.saved}</strong>
+            </div>
+            <div className="onb-checkout-code">Code appliqué : {showSpecialOffer ? "SOBRE60" : "SOBRE50"}</div>
+
+            <div className="onb-checkout-total">
+              <span>Total</span>
+              <strong>{prices.discounted}</strong>
+            </div>
+            <p className="onb-checkout-saved">Tu économises {prices.saved} ({offerLevel}% off)</p>
+            
+
+            <button className="onb-checkout-paypal" onClick={() => startCheckout("paypal")} disabled={loading}>
+              {loading ? "Chargement..." : "PayPal • Payer"}
+            </button>
+            <button className="onb-checkout-apple"> Pay</button>
+
+            <div className="onb-checkout-fields">
+              <div>XXXX XXXX XXXX XXXX</div>
+              <div>
+                <span>MM/YY</span>
+                <span>CVV</span>
+              </div>
+            </div>
+
+            <button className="onb-checkout-confirm">🔒 CONFIRMER LE PAIEMENT</button>
+          </div>
+        </section>
       </div>
 
-      <button className="onb-btn-gold onb-trial-btn" onClick={handleContinue}>
-        {loading ? "Chargement..." : "Continuer gratuitement"}
-      </button>
+      <div className="onb-paywall-cta-wrap">
+        <button className="onb-btn-gold onb-trial-btn" onClick={() => startCheckout("card")} disabled={loading}>
+          {loading ? "Chargement..." : showSpecialOffer ? "Activer -60% maintenant" : "Continuer"}
+        </button>
+        <p className="onb-paywall-legal">
+          En continuant, tu actives ton offre promotionnelle et ton accès immédiat à SOBRE Premium.
+        </p>
+      </div>
     </div>
   );
 };
@@ -2593,12 +2966,3 @@ export default function OnboardingFirst5({ onDone, onLoginClick }: Props) {
     </div>
   );
 }
-
-
-
-
-
-
-
-
-

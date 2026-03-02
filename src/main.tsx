@@ -7,7 +7,7 @@ import './index.css';
 
 const pathname = window.location.pathname.replace(/\/+$/, '') || '/';
 const RootComponent =
-  pathname === '/start-first5'
+  pathname === '/' || pathname === '/start-first5'
     ? OnboardingFirst5
     : pathname === '/start'
       ? OnboardingPage

@@ -2222,116 +2222,257 @@
   }
 }
 
-.onb-free-screen {
+.onb-offer-screen {
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-  padding-top: max(4px, env(safe-area-inset-top));
+  background:
+    radial-gradient(95% 62% at 50% -8%, rgba(255, 212, 77, 0.22), transparent 70%),
+    #0b0b0c;
 }
 
-.onb-free-screen .onb-question-header {
-  padding-top: 6px;
-  padding-bottom: 6px;
-}
-
-.onb-free-main {
+.onb-offer-main {
   flex: 1;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  padding: 0 18px 2px;
-  transform: translateY(-28px);
+  align-items: center;
+  text-align: center;
+  padding: 10px 18px 8px;
 }
 
-.onb-free-pill {
-  align-self: center;
+.onb-offer-pill {
+  border: 1px solid rgba(255, 212, 77, 0.5);
   border-radius: 999px;
-  padding: 8px 16px;
-  background: rgba(255, 255, 255, 0.92);
-  font-weight: 600;
-  color: rgba(0, 0, 0, 0.85);
-  font-size: 15px;
-}
-
-.onb-free-hero {
-  width: min(380px, 102%);
-  align-self: center;
-  margin-top: -12px;
-  object-fit: contain;
-}
-
-.onb-free-copy {
-  margin-top: -16px;
-  width: 100%;
-}
-
-.onb-free-main h2 {
-  margin: 0 0 10px;
-  max-width: 310px;
-  font-size: 52px;
-  line-height: 0.98;
-  letter-spacing: -0.35px;
+  padding: 7px 14px;
+  font-size: 12px;
   font-weight: 700;
-  color: rgba(0, 0, 0, 0.88);
+  letter-spacing: 0.9px;
+  color: #ffd44d;
+  background: rgba(255, 212, 77, 0.12);
 }
 
-.onb-free-main p {
+.onb-offer-title {
+  margin: 16px 0 10px;
+  font-size: clamp(29px, 8vw, 38px);
+  line-height: 1.06;
+  letter-spacing: -0.3px;
+  font-weight: 800;
+  color: #fff;
+}
+
+.onb-offer-subtitle {
   margin: 0;
-  color: rgba(0, 0, 0, 0.6);
-  line-height: 1.24;
+  max-width: 320px;
+  color: rgba(255, 255, 255, 0.7);
   font-size: 15px;
-  max-width: 340px;
-  font-weight: 500;
+  line-height: 1.35;
 }
 
-.onb-free-btn {
-  margin: 0 18px 10px;
-  border: 0;
-  border-radius: 18px;
-  min-height: 58px;
-  padding: 12px 16px;
-  background: rgba(255, 255, 255, 0.92);
-  font-size: 18px;
-  font-weight: 700;
-  color: rgba(0, 0, 0, 0.75);
+.onb-offer-scratch {
+  width: min(300px, 90vw);
+  aspect-ratio: 1 / 1;
+  margin-top: 24px;
+  border: 1px solid rgba(255, 212, 77, 0.46);
+  border-radius: 24px;
+  background:
+    radial-gradient(130% 130% at 10% 10%, rgba(255, 255, 255, 0.22), transparent 58%),
+    linear-gradient(145deg, #ffe28f, #ffd44d 54%, #e3ad00);
+  display: grid;
+  place-items: center;
+  position: relative;
+  overflow: hidden;
   cursor: pointer;
-  transform: translateY(-18px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 212, 77, 0.34) inset;
+}
+
+.onb-offer-scratch-progress {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 3;
+  border-radius: 999px;
+  padding: 4px 10px;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+}
+
+.onb-offer-scratch-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 24px;
+  touch-action: none;
+  z-index: 4;
+}
+
+.onb-offer-scratch-text {
+  position: relative;
+  z-index: 2;
+  color: rgba(22, 17, 4, 0.85);
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.onb-offer-scratch-shine {
+  position: absolute;
+  left: -40%;
+  top: -8%;
+  width: 60%;
+  height: 120%;
+  background: rgba(255, 255, 255, 0.28);
+  filter: blur(10px);
+  transform: rotate(20deg);
+}
+
+.onb-offer-scratch-cover {
+  display: none;
+}
+
+.onb-offer-scratch.is-scratching .onb-offer-scratch-cover {
+  filter: brightness(1.15);
+}
+
+.onb-offer-scratch.is-revealing .onb-offer-scratch-cover {
+  opacity: 0;
+}
+
+.onb-offer-scratch.is-revealing::after {
+  content: "";
+  position: absolute;
+  inset: -20%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.65), rgba(255, 255, 255, 0));
+  animation: onb-offer-flash 620ms ease-out forwards;
+  pointer-events: none;
+}
+
+.onb-offer-card {
+  width: min(300px, 90vw);
+  aspect-ratio: 1 / 1;
+  margin-top: 24px;
+  border: 1px solid rgba(255, 212, 77, 0.46);
+  border-radius: 24px;
+  background:
+    radial-gradient(130% 130% at 10% 10%, rgba(255, 255, 255, 0.22), transparent 58%),
+    linear-gradient(145deg, #ffe28f, #ffd44d 54%, #e3ad00);
+  display: grid;
+  place-items: center;
+  align-content: center;
+  color: rgba(22, 17, 4, 0.94);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 212, 77, 0.34) inset;
+  position: relative;
+  overflow: visible;
+}
+
+.onb-offer-card-pop {
+  animation: onb-offer-pop 520ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.onb-offer-card-main {
+  font-size: clamp(82px, 18vw, 120px);
+  line-height: 0.95;
+  font-weight: 800;
+}
+
+.onb-offer-card-sub {
+  margin-top: 6px;
+  font-size: 34px;
+  line-height: 1;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+
+.onb-offer-card-foot {
+  margin-top: 14px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+}
+
+.onb-offer-spark {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: rgba(255, 240, 170, 0.95);
+  box-shadow: 0 0 16px rgba(255, 232, 146, 0.75);
+  animation: onb-offer-spark 1.4s ease-in-out infinite;
+}
+
+.onb-offer-spark-1 {
+  left: -10px;
+  top: 14%;
+}
+
+.onb-offer-spark-2 {
+  right: -14px;
+  top: 28%;
+  animation-delay: 0.25s;
+}
+
+.onb-offer-spark-3 {
+  right: 4px;
+  bottom: -12px;
+  animation-delay: 0.45s;
+}
+
+@keyframes onb-offer-pop {
+  0% {
+    transform: scale(0.82) rotate(-1.2deg);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.04) rotate(0.6deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+@keyframes onb-offer-flash {
+  from {
+    opacity: 0.95;
+    transform: scale(0.7);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.25);
+  }
+}
+
+@keyframes onb-offer-spark {
+  0%, 100% {
+    opacity: 0.35;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+.onb-offer-btn {
+  width: calc(100% - 36px);
+  margin: 12px auto 20px;
+}
+
+.onb-offer-btn:disabled {
+  opacity: 0.78;
+  cursor: not-allowed;
 }
 
 @media (max-width: 420px) {
-  .onb-free-main {
-    padding: 0 14px 2px;
-    transform: translateY(-18px);
-  }
-
-  .onb-free-pill {
+  .onb-offer-subtitle {
+    max-width: 290px;
     font-size: 14px;
-    padding: 7px 14px;
   }
 
-  .onb-free-hero {
-    width: min(308px, 100%);
-    margin-top: -10px;
-  }
-
-  .onb-free-main h2 {
-    margin: 0 0 8px;
-    max-width: 270px;
-    font-size: 30px;
-    line-height: 1.04;
-  }
-
-  .onb-free-main p {
-    font-size: 14px;
-    line-height: 1.26;
-    max-width: 286px;
-  }
-
-  .onb-free-btn {
-    margin: 0 14px 8px;
-    min-height: 52px;
-    font-size: 16px;
-    transform: translateY(-14px);
+  .onb-offer-scratch-text {
+    font-size: 21px;
   }
 }
 
@@ -2586,53 +2727,390 @@
 .onb-trial-screen {
   display: flex;
   flex-direction: column;
+  background:
+    radial-gradient(85% 45% at 50% 0%, rgba(255, 212, 77, 0.16), transparent 70%),
+    #000;
 }
 
 .onb-trial-main {
   flex: 1;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: space-between;
-  padding: 86px 24px 42px;
+  gap: 14px;
+  overflow: auto;
+  padding: 8px 16px 160px;
+}
+
+.onb-paywall-timer-wrap {
   text-align: center;
+  border: 1px solid rgba(255, 212, 77, 0.34);
+  border-radius: 16px;
+  background: rgba(255, 212, 77, 0.08);
+  padding: 12px;
 }
 
-.onb-trial-main h2 {
-  margin: 0;
-  font-size: 24px;
-  line-height: 32px;
+.onb-paywall-timer-kicker {
+  margin: 0 0 6px;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 13px;
 }
 
-.onb-trial-bell {
-  font-size: 78px;
-  position: relative;
+.onb-paywall-timer {
+  color: #ffd44d;
+  font-size: 34px;
+  font-weight: 800;
+  letter-spacing: 1px;
 }
 
-.onb-trial-bell span {
-  position: absolute;
-  right: -12px;
-  top: 0;
-  width: 42px;
-  height: 42px;
-  border-radius: 999px;
-  background: #e11d48;
+.onb-paywall-hero,
+.onb-paywall-list,
+.onb-paywall-proof,
+.onb-paywall-pricing {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 14px;
+}
+
+.onb-paywall-hero h2,
+.onb-paywall-list h3,
+.onb-paywall-proof h3,
+.onb-paywall-pricing h3 {
+  margin: 0 0 10px;
   color: #fff;
+}
+
+.onb-paywall-hero h2 {
+  font-size: 30px;
+  line-height: 1.06;
+}
+
+.onb-paywall-hero > p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.72);
+  line-height: 1.35;
+}
+
+.onb-paywall-compare {
+  margin-top: 12px;
   display: grid;
-  place-items: center;
-  font-size: 20px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.onb-paywall-compare article {
+  border: 1px solid rgba(255, 212, 77, 0.24);
+  border-radius: 14px;
+  padding: 10px;
+  background: rgba(255, 212, 77, 0.07);
+}
+
+.onb-paywall-compare h3 {
+  margin: 0 0 8px;
+  font-size: 17px;
+  color: #ffd44d;
+}
+
+.onb-paywall-compare p {
+  margin: 0 0 6px;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 13px;
+}
+
+.onb-paywall-list p {
+  margin: 0 0 9px;
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 15px;
+}
+
+.onb-paywall-reviews {
+  display: grid;
+  gap: 10px;
+}
+
+.onb-paywall-reviews blockquote {
+  margin: 0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.82);
+  padding: 10px;
+  font-size: 14px;
+  line-height: 1.34;
+}
+
+.onb-paywall-plan {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 14px;
+  padding: 12px;
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+  cursor: pointer;
+}
+
+.onb-paywall-plan.is-selected {
+  border-color: rgba(255, 212, 77, 0.52);
+  background: rgba(255, 212, 77, 0.08);
+}
+
+.onb-paywall-plan strong {
+  color: #fff;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.onb-paywall-plan p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.onb-paywall-plan s {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.onb-paywall-plan span {
+  color: #ffd44d;
   font-weight: 700;
 }
 
-.onb-trial-main p {
-  margin: 0;
-  color: rgba(255, 255, 255, 0.78);
-  font-size: 16px;
+.onb-paywall-price {
+  color: #fff;
+  font-weight: 800;
+  font-size: 18px;
+  text-align: right;
+}
+
+.onb-paywall-safe {
+  margin: 2px 0 0;
+  color: rgba(255, 255, 255, 0.64);
+  font-size: 12px;
+}
+
+.onb-checkout-block {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 14px;
+}
+
+.onb-checkout-reserved {
+  border: 1px solid rgba(255, 212, 77, 0.35);
+  border-radius: 12px;
+  background: rgba(255, 212, 77, 0.1);
+  color: #ffd44d;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 10px 12px;
+  text-align: center;
+}
+
+.onb-checkout-block h3 {
+  margin: 14px 0 12px;
+  text-align: center;
+  color: #fff;
+  font-size: 28px;
+  line-height: 1.14;
+}
+
+.onb-checkout-block h3 span {
+  color: #ffd44d;
+}
+
+.onb-checkout-card {
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 12px;
+}
+
+.onb-checkout-card h4 {
+  margin: 0 0 12px;
+  color: #fff;
+  text-align: center;
+  font-size: 28px;
+}
+
+.onb-checkout-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  color: rgba(255, 255, 255, 0.82);
+  margin-bottom: 8px;
+}
+
+.onb-checkout-row strong {
+  color: #fff;
+}
+
+.onb-checkout-row.is-discount strong {
+  color: #ef4444;
+}
+
+.onb-checkout-code {
+  margin: 10px 0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.82);
+  text-align: center;
+  padding: 9px;
   font-weight: 600;
 }
 
+.onb-checkout-total {
+  margin-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 10px;
+  display: flex;
+  justify-content: space-between;
+  color: #fff;
+  font-size: 26px;
+  font-weight: 800;
+}
+
+.onb-checkout-saved {
+  margin: 6px 0 12px;
+  color: #ef4444;
+  text-align: right;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.onb-checkout-paypal,
+.onb-checkout-apple,
+.onb-checkout-confirm {
+  width: 100%;
+  border: 0;
+  border-radius: 10px;
+  padding: 12px;
+  font-weight: 800;
+  font-size: 17px;
+  cursor: pointer;
+}
+
+.onb-checkout-paypal:disabled,
+.onb-trial-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.onb-checkout-paypal {
+  background: #ffd44d;
+  color: #171204;
+}
+
+.onb-checkout-apple {
+  margin-top: 8px;
+  background: #000;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.onb-checkout-fields {
+  margin-top: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.onb-checkout-fields > div {
+  min-height: 48px;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 22px;
+}
+
+.onb-checkout-fields > div:last-child {
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  justify-content: space-between;
+}
+
+.onb-checkout-confirm {
+  margin-top: 10px;
+  background: linear-gradient(90deg, #ffd44d, #f2b700);
+  color: #171204;
+}
+
+.onb-paywall-cta-wrap {
+  position: sticky;
+  bottom: 0;
+  padding: 10px 16px max(18px, env(safe-area-inset-bottom));
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0), #000 38%);
+}
+
 .onb-trial-btn {
-  margin: 0 24px 34px;
-  width: calc(100% - 48px);
+  margin: 0;
+  width: 100%;
   align-self: center;
+}
+
+.onb-paywall-legal {
+  margin: 10px 0 0;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.onb-special-offer-head {
+  border: 1px solid rgba(255, 212, 77, 0.35);
+  border-radius: 16px;
+  background: rgba(255, 212, 77, 0.09);
+  padding: 12px;
+  text-align: center;
+}
+
+.onb-special-prev {
+  margin: 0 0 8px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 14px;
+}
+
+.onb-special-prev s {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.onb-special-offer-head h2 {
+  margin: 0 0 8px;
+  color: #ffd44d;
+  font-size: 34px;
+  line-height: 1.08;
+}
+
+.onb-special-offer-head p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+@media (max-width: 420px) {
+  .onb-paywall-hero h2 {
+    font-size: 26px;
+  }
+
+  .onb-paywall-timer {
+    font-size: 30px;
+  }
+
+  .onb-checkout-block h3 {
+    font-size: 24px;
+  }
+
+  .onb-checkout-card h4 {
+    font-size: 24px;
+  }
+
+  .onb-checkout-total {
+    font-size: 22px;
+  }
+
+  .onb-special-offer-head h2 {
+    font-size: 29px;
+  }
 }

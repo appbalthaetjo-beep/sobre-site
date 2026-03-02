@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Brain, Target, Users, Zap, Shield, Trophy, CheckCircle } from 'lucide-react';
 
 const rewardsMilestones = [
@@ -1046,5 +1046,3 @@ function App() {
 }
 
 export default App;
-
-
