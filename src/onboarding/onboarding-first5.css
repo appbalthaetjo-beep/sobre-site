@@ -2727,6 +2727,7 @@
 .onb-trial-screen {
   display: flex;
   flex-direction: column;
+  position: relative;
   background:
     radial-gradient(85% 45% at 50% 0%, rgba(255, 212, 77, 0.16), transparent 70%),
     #000;
@@ -2739,6 +2740,68 @@
   gap: 14px;
   overflow: auto;
   padding: 8px 16px 160px;
+}
+
+.onb-close-btn {
+  font-size: 24px;
+  line-height: 1;
+}
+
+.onb-exit-offer-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 84px 16px 16px;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(3px);
+}
+
+.onb-exit-offer-card {
+  width: min(100%, 420px);
+  border-radius: 18px;
+  border: 1px solid rgba(255, 212, 77, 0.36);
+  background:
+    radial-gradient(120% 120% at 50% 0%, rgba(255, 212, 77, 0.2), transparent 64%),
+    #0b0b0c;
+  padding: 24px 18px 18px;
+  text-align: center;
+}
+
+.onb-exit-offer-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 112px;
+  height: 44px;
+  padding: 0 18px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 212, 77, 0.4);
+  background: rgba(255, 212, 77, 0.12);
+  color: #ffd44d;
+  font-size: 28px;
+  font-weight: 800;
+}
+
+.onb-exit-offer-card h3 {
+  margin: 16px 0 10px;
+  color: #ffd44d;
+  font-size: 38px;
+  line-height: 1.04;
+}
+
+.onb-exit-offer-card p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.84);
+  font-size: 17px;
+  line-height: 1.35;
+}
+
+.onb-exit-offer-btn {
+  margin-top: 18px;
+  width: 100%;
 }
 
 .onb-paywall-timer-wrap {

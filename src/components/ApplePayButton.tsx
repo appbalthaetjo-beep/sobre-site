@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { loadStripe } from "@stripe/stripe-js";
 
-const STRIPE_PUBLISHABLE_KEY = "pk_test_51T5BaoFkWHd4X5DeqHuvcNKMzDnkfrStIyoHaCJHBmttDlTbf6wJRuVSzJaC5h2q8jxADw7xGU1ptw0LcBJsvUq200torerrDL";
 export default function ApplePayButton() {
   const ref = useRef<HTMLDivElement>(null);
   const [supported, setSupported] = useState(false);
@@ -10,7 +9,9 @@ export default function ApplePayButton() {
     let mounted = true;
 
     (async () => {
-      const stripe = await loadStripe(STRIPE_PUBLISHABLE_KEY);
+      const key = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as string | undefined;
+      if (!key) return;
+      const stripe = await loadStripe(key);
       if (!stripe || !mounted) return;
 
       const paymentRequest = stripe.paymentRequest({

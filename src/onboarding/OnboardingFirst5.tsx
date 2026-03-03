@@ -1,6 +1,7 @@
 ﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion, type Variants } from "framer-motion";
 import "./onboarding-first5.css";
+import PayPalSubscriptionButtons from "../components/PayPalSubscriptionButtons";
 
 type StepId =
   | "index"
@@ -2648,10 +2649,13 @@ const CustomPersonalizedSummary: React.FC<CustomProps> = ({ goNext, answers }) =
 };
 
 const CustomTrialReminder: React.FC<CustomProps> = ({ goBack }) => {
+  const OFFER_TIMER_SECONDS = 10 * 60;
   const [loading, setLoading] = useState(false);
-  const [secondsLeft, setSecondsLeft] = useState(10 * 60);
+  const [secondsLeft, setSecondsLeft] = useState(OFFER_TIMER_SECONDS);
   const [selectedPlan, setSelectedPlan] = useState<"month" | "year">("month");
   const [showSpecialOffer, setShowSpecialOffer] = useState(false);
+  const [showExitOfferPrompt, setShowExitOfferPrompt] = useState(false);
+  const [showPayPal, setShowPayPal] = useState(false);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -2661,10 +2665,17 @@ const CustomTrialReminder: React.FC<CustomProps> = ({ goBack }) => {
   }, []);
 
   useEffect(() => {
-    if (secondsLeft === 0) {
+    if (secondsLeft === 0 && !showSpecialOffer) {
       setShowSpecialOffer(true);
+      setSecondsLeft(OFFER_TIMER_SECONDS);
     }
-  }, [secondsLeft]);
+  }, [secondsLeft, showSpecialOffer]);
+
+  useEffect(() => {
+    if (showSpecialOffer) {
+      setShowExitOfferPrompt(false);
+    }
+  }, [showSpecialOffer]);
 
   const minutes = String(Math.floor(secondsLeft / 60)).padStart(2, "0");
   const seconds = String(secondsLeft % 60).padStart(2, "0");
@@ -2678,13 +2689,17 @@ const CustomTrialReminder: React.FC<CustomProps> = ({ goBack }) => {
       ? { original: "24,99€", discounted: "9,99€ / mois", saved: "15,00€" }
       : { original: "74,99€", discounted: "29,99€ / an", saved: "45,00€" };
 
+  useEffect(() => {
+    setShowPayPal(false);
+  }, [selectedPlan, offerLevel]);
+
   const startCheckout = async (preferredMethod: "paypal" | "card") => {
     if (loading) return;
     setLoading(true);
 
     try {
-      const apiBase = (import.meta.env.VITE_API_BASE_URL || "http://localhost:4242").replace(/\/+$/, "");
-      const res = await fetch(`${apiBase}/api/create-checkout-session`, {
+      const API = String(import.meta.env.VITE_API_BASE_URL || "http://localhost:4242").replace(/\/+$/, "");
+      const res = await fetch(`${API}/api/create-checkout-session`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -2712,18 +2727,37 @@ const CustomTrialReminder: React.FC<CustomProps> = ({ goBack }) => {
       goBack();
       return;
     }
+    setShowExitOfferPrompt(true);
+  };
+
+  const activateSpecialOffer = () => {
     setShowSpecialOffer(true);
+    setSecondsLeft(OFFER_TIMER_SECONDS);
+    setShowExitOfferPrompt(false);
   };
 
   return (
     <div className="onb-screen onb-black onb-trial-screen">
       <div className="onb-question-header">
-        <button className="onb-back-btn" onClick={handleExitIntent} aria-label="Retour">
-          {"\u2190"}
+        <div className="onb-header-spacer" />
+        <div className="onb-header-spacer" />
+        <button className="onb-back-btn onb-close-btn" onClick={handleExitIntent} aria-label="Fermer">
+          {"\u00d7"}
         </button>
-        <div className="onb-header-spacer" />
-        <div className="onb-header-spacer" />
       </div>
+
+      {showExitOfferPrompt && (
+        <div className="onb-exit-offer-overlay" role="dialog" aria-modal="true" aria-label="Offre spéciale 60%">
+          <div className="onb-exit-offer-card">
+            <div className="onb-exit-offer-badge">-60%</div>
+            <h3>Offre spéciale activée</h3>
+            <p>Tu allais quitter. On te débloque immédiatement la meilleure remise.</p>
+            <button className="onb-btn-gold onb-exit-offer-btn" onClick={activateSpecialOffer}>
+              Activer -60% maintenant
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="onb-trial-main">
         {showSpecialOffer && (
@@ -2837,11 +2871,25 @@ const CustomTrialReminder: React.FC<CustomProps> = ({ goBack }) => {
             </div>
             <p className="onb-checkout-saved">Tu économises {prices.saved} ({offerLevel}% off)</p>
             
+            {!showPayPal ? (
+              <button className="onb-checkout-paypal" onClick={() => setShowPayPal(true)} disabled={loading}>
+                {loading ? "Chargement..." : "PayPal • Payer"}
+              </button>
+            ) : (
+              <div style={{ marginTop: 10 }}>
+                <PayPalSubscriptionButtons
+                  plan={selectedPlan}
+                  offer={offerLevel as "50" | "60"}
+                  onApproved={(subscriptionId) => {
+                    window.location.href = `/success?paypal_subscription_id=${encodeURIComponent(subscriptionId)}`;
+                  }}
+                />
+              </div>
+            )}
 
-            <button className="onb-checkout-paypal" onClick={() => startCheckout("paypal")} disabled={loading}>
-              {loading ? "Chargement..." : "PayPal • Payer"}
+            <button className="onb-checkout-apple" onClick={() => startCheckout("card")} disabled={loading}>
+               Pay
             </button>
-            <button className="onb-checkout-apple"> Pay</button>
 
             <div className="onb-checkout-fields">
               <div>XXXX XXXX XXXX XXXX</div>
@@ -2851,7 +2899,9 @@ const CustomTrialReminder: React.FC<CustomProps> = ({ goBack }) => {
               </div>
             </div>
 
-            <button className="onb-checkout-confirm">🔒 CONFIRMER LE PAIEMENT</button>
+            <button className="onb-checkout-confirm" onClick={() => startCheckout("card")} disabled={loading}>
+              🔒 CONFIRMER LE PAIEMENT
+            </button>
           </div>
         </section>
       </div>
