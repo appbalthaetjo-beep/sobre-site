@@ -1,8 +1,7 @@
 ﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion, type Variants } from "framer-motion";
 import "./onboarding-first5.css";
-import PayPalSubscriptionButtons from "../components/PayPalSubscriptionButtons";
-
+import { getCheckoutIdentityError, readFunnelIdentityFromSearch } from "../lib/funnelIdentity";
 type StepId =
   | "index"
   | "story"
@@ -209,6 +208,25 @@ function clampPercent(value: number) {
 
 function clamp01(value: number) {
   return Math.min(1, Math.max(0, value));
+}
+
+const PROMO_MONTH_SHORT = ["JAN", "FEV", "MAR", "AVR", "MAI", "JUN", "JUL", "AOU", "SEP", "OCT", "NOV", "DEC"];
+
+function getPromoUserPart(firstName?: string) {
+  const normalized = String(firstName || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z]/g, "")
+    .toUpperCase();
+  return (normalized.slice(0, 3) || "USR").padEnd(3, "X");
+}
+
+function buildPromoCode(firstName: string | undefined, offer: "50" | "60") {
+  const userPart = getPromoUserPart(firstName);
+  if (offer === "60") return `${userPart}_FINAL`;
+  const monthPart = PROMO_MONTH_SHORT[new Date().getMonth()] || "JAN";
+  const yearPart = String(new Date().getFullYear());
+  return `${userPart}_${monthPart}${yearPart}`;
 }
 
 function computeQuizResult(answers: Record<string, string | number>) {
@@ -961,7 +979,7 @@ const CustomQuestion12: React.FC<CustomProps> = ({ goNext, goBack, answers, setA
 
       <div className="onb-q12-bottom">
         <button className="onb-q12-next" onClick={handleContinue}>
-          Suivant →
+          Suivant ?
         </button>
       </div>
     </div>
@@ -1023,7 +1041,7 @@ const CustomQuestion13: React.FC<CustomProps> = ({ goNext, goBack, answers, setA
             <p>🚀 Manque de motivation pour commencer ou terminer des tâches</p>
             <p>🎯 Difficultés de concentration</p>
             <p>💞 Perte d’intérêt pour l’intimité</p>
-            <p>🍆 Difficultés d’érection</p>
+            <p>⚠️ Difficultés d’érection</p>
           </div>
 
           <div className="onb-choice-list">
@@ -1137,8 +1155,8 @@ const CustomResults: React.FC<CustomProps> = ({ goNext, goBack, answers }) => {
   const deltaLabel = delta >= 0 ? `${Math.round(delta)}%` : `${Math.abs(Math.round(delta))}%`;
   const deltaText =
     delta >= 0
-      ? `${deltaLabel} de dépendance en plus que la moyenne ↘`
-      : `${deltaLabel} de dépendance en moins que la moyenne ↘`;
+      ? `${deltaLabel} de dépendance en plus que la moyenne ?`
+      : `${deltaLabel} de dépendance en moins que la moyenne ?`;
 
   return (
     <div className="onb-screen onb-black">
@@ -1201,19 +1219,19 @@ const CustomSymptoms: React.FC<CustomProps> = ({ goNext, goBack, answers, setAns
     {
       title: "Mental",
       symptoms: [
-        { id: "demotivated", label: "💤 Se sentir démotivé" },
+        { id: "demotivated", label: "😞 Se sentir démotivé" },
         { id: "lack_ambition", label: "🎯 Manque d’ambition pour poursuivre des objectifs" },
-        { id: "concentration", label: "🎯 Difficulté à se concentrer" },
-        { id: "memory", label: "🧠 Mauvaise mémoire / “brouillard mental”" },
+        { id: "concentration", label: "🧠 Difficulté à se concentrer" },
+        { id: "memory", label: "🌫️ Mauvaise mémoire / “brouillard mental”" },
         { id: "anxiety", label: "😰 Anxiété générale" },
       ],
     },
     {
       title: "Physique",
       symptoms: [
-        { id: "fatigue", label: "😮‍💨 Fatigue et léthargie" },
-        { id: "low_libido", label: "💓 Faible désir sexuel" },
-        { id: "weak_erections", label: "🍆 Érections faibles sans pornographie" },
+        { id: "fatigue", label: "💤 Fatigue et léthargie" },
+        { id: "low_libido", label: "💔 Faible désir sexuel" },
+        { id: "weak_erections", label: "⚠️ Érections faibles sans pornographie" },
       ],
     },
     {
@@ -1221,9 +1239,9 @@ const CustomSymptoms: React.FC<CustomProps> = ({ goNext, goBack, answers, setAns
       symptoms: [
         { id: "low_confidence", label: "💔 Faible confiance en soi" },
         { id: "unattractive", label: "🪞 Se sentir peu attirant ou indigne d’amour" },
-        { id: "unsatisfying_sex", label: "🧩 Rapports sexuels insatisfaisants ou sans plaisir" },
-        { id: "reduced_socializing", label: "💬 Désir réduit de socialiser" },
-        { id: "isolated", label: "😔 Se sentir isolé des autres" },
+        { id: "unsatisfying_sex", label: "🫥 Rapports sexuels insatisfaisants ou sans plaisir" },
+        { id: "reduced_socializing", label: "🧍 Désir réduit de socialiser" },
+        { id: "isolated", label: "🌫️ Se sentir isolé des autres" },
       ],
     },
     {
@@ -1483,13 +1501,13 @@ const CustomSlide7: React.FC<CustomProps> = ({ goNext }) => {
           <div className="onb-slide7-badge">75</div>
         </div>
         <p className="onb-slide7-post-text">Aujourd&apos;hui ça fait 75 jours sans porno... je sens déjà la différence.</p>
-        <div className="onb-slide7-post-meta">😎 Jacob • 0 jours • il y a 1 jour</div>
+        <div className="onb-slide7-post-meta">👤 Jacob • 0 jours • il y a 1 jour</div>
       </div>
 
       <div className="onb-slide7-stats-row">
-        <div className="onb-slide7-stat-pill">💬 305</div>
-        <div className="onb-slide7-stat-pill">👍 1224</div>
-        <div className="onb-slide7-stat-pill">👎 5</div>
+        <div className="onb-slide7-stat-pill">❤️ 305</div>
+        <div className="onb-slide7-stat-pill">💬 1224</div>
+        <div className="onb-slide7-stat-pill">🔥 5</div>
       </div>
 
       <div className="onb-slide7-jake-card">
@@ -1545,7 +1563,7 @@ const CustomSlide8: React.FC<CustomProps> = ({ goNext }) => {
         </div>
         <div className="onb-slide8-card">
           <div className="onb-slide8-head">
-            <span className="onb-slide8-head-check">✓</span>
+            <span className="onb-slide8-head-check">?</span>
             <span>Sites bloqués</span>
             <span className="onb-slide8-head-count">· {blocked ? "1249" : "1248"}</span>
           </div>
@@ -1558,7 +1576,7 @@ const CustomSlide8: React.FC<CustomProps> = ({ goNext }) => {
                 <small>{blocked ? "Bloqué" : "Blocage..."}</small>
               </div>
             </div>
-            <div className="onb-slide8-site-status">✓</div>
+            <div className="onb-slide8-site-status">?</div>
           </div>
 
           <div className={`onb-slide8-site ${blocked ? "is-blocked" : ""}`}>
@@ -1572,7 +1590,7 @@ const CustomSlide8: React.FC<CustomProps> = ({ goNext }) => {
                 <small>{blocked ? "Bloqué" : "Blocage..."}</small>
               </div>
             </div>
-            <div className="onb-slide8-site-status">✓</div>
+            <div className="onb-slide8-site-status">?</div>
           </div>
         </div>
       </div>
@@ -1645,12 +1663,12 @@ const CustomSlide9: React.FC<CustomProps> = ({ goNext }) => {
 
       <div className="onb-slide9-controls-wrap">
         <div className="onb-slide9-controls-top">
-          <div className="onb-slide9-mini-btn">−</div>
+          <div className="onb-slide9-mini-btn">-</div>
           <div className="onb-slide9-time-pill">5 min</div>
           <div className="onb-slide9-mini-btn">+</div>
           <div className="onb-slide9-add-pill">+ Ajouter des apps</div>
         </div>
-        <div className="onb-slide9-start-btn">▶ Démarrer le blocage</div>
+        <div className="onb-slide9-start-btn">? Démarrer le blocage</div>
       </div>
 
       <div className="onb-slide-copy onb-slide9-copy">
@@ -1853,10 +1871,10 @@ const CustomPastAttempts: React.FC<CustomProps> = (p) => (
     questionKey="past_porn_change_attempt"
     showSkip={false}
     choices={[
-      { id: "yes_easy", label: "✅ Oui, et ce n’était pas difficile" },
-      { id: "yes_somewhat", label: "🤔 Oui, mais c’était un peu difficile" },
-      { id: "yes_very", label: "😓 Oui, et c’était très difficile" },
-      { id: "no_first_time", label: "🙅 Non, c’est la première fois" },
+      { id: "yes_easy", label: "🙂 Oui, et ce n’était pas difficile" },
+      { id: "yes_somewhat", label: "😓 Oui, mais c’était un peu difficile" },
+      { id: "yes_very", label: "😣 Oui, et c’était très difficile" },
+      { id: "no_first_time", label: "🆕 Non, c’est la première fois" },
     ]}
   />
 );
@@ -1876,11 +1894,11 @@ const CustomRewiringAdvantages: React.FC<CustomProps> = ({ goNext }) => (
 
 const CustomPersonalGoals: React.FC<CustomProps> = ({ goNext, goBack, answers, setAnswers }) => {
   const goals = [
-    { id: "stop_completely", title: "🏁 Arrêter complètement" },
+    { id: "stop_completely", title: "🛑 Arrêter complètement" },
     { id: "improve_relationships", title: "❤️ Améliorer mes relations" },
-    { id: "regain_energy", title: "💪 Retrouver de l’énergie / de la motivation" },
+    { id: "regain_energy", title: "⚡ Retrouver de l’énergie / de la motivation" },
     { id: "mental_clarity", title: "🧠 Améliorer ma clarté mentale" },
-    { id: "reduce_anxiety", title: "😌 Réduire l’anxiété / retrouver la paix intérieure" },
+    { id: "reduce_anxiety", title: "🕊️ Réduire l’anxiété / retrouver la paix intérieure" },
   ];
   const [selected, setSelected] = useState<string[]>(answers.userGoals ?? []);
 
@@ -2119,7 +2137,7 @@ const CustomRateUs: React.FC<CustomProps> = ({ goNext }) => {
           porno
         </h2>
         <p>Chaque note nous aide à lutter contre l’industrie du porno et à aider plus de personnes.</p>
-        <div className="onb-rate-stars">★ ★ ★ ★ ★</div>
+        <div className="onb-rate-stars">★★★★★</div>
         <div className="onb-rate-kicker">Plus de 300 avis 5 étoiles</div>
         <div className="onb-rate-avatars">
           <img src="https://i.imgur.com/pMpaMOd.png" alt="" />
@@ -2162,13 +2180,13 @@ const CustomRateUs: React.FC<CustomProps> = ({ goNext }) => {
       </div>
 
       <button className="onb-btn-gold onb-rate-btn" onClick={goNext}>
-        Continuer →
+        Continuer
       </button>
     </div>
   );
 };
 
-const CustomFreeTrial: React.FC<CustomProps> = ({ goBack, goNext }) => {
+const CustomFreeTrial: React.FC<CustomProps> = ({ goBack, goNext, answers }) => {
   const [phase, setPhase] = useState<"scratch" | "reveal">("scratch");
   const [isScratching, setIsScratching] = useState(false);
   const [scratchProgress, setScratchProgress] = useState(0);
@@ -2180,10 +2198,11 @@ const CustomFreeTrial: React.FC<CustomProps> = ({ goBack, goNext }) => {
   const scratchedCellsRef = useRef<Uint8Array | null>(null);
   const scratchedCountRef = useRef(0);
   const revealedRef = useRef(false);
+  const promoCode = useMemo(() => buildPromoCode(answers.personalData?.firstName, "50"), [answers.personalData?.firstName]);
 
-  const GRID_SIZE = 48;
-  const REVEAL_THRESHOLD = 42;
-  const BRUSH_RADIUS = 22;
+  const GRID_SIZE = 36;
+  const REVEAL_THRESHOLD = 28;
+  const BRUSH_RADIUS = 28;
 
   const setupScratchLayer = useCallback(() => {
     const host = scratchHostRef.current;
@@ -2287,7 +2306,7 @@ const CustomFreeTrial: React.FC<CustomProps> = ({ goBack, goNext }) => {
         setIsScratching(false);
         setIsRevealing(false);
         setIsDrawing(false);
-      }, 520);
+      }, 320);
     }
   };
 
@@ -2408,6 +2427,7 @@ const CustomFreeTrial: React.FC<CustomProps> = ({ goBack, goNext }) => {
             <div className="onb-offer-card-main">50%</div>
             <div className="onb-offer-card-sub">OFF</div>
             <div className="onb-offer-card-foot">OFFRE LIMITEE</div>
+            <div className="onb-offer-card-code">CODE_PROMO : {promoCode}</div>
             <span className="onb-offer-spark onb-offer-spark-1" />
             <span className="onb-offer-spark onb-offer-spark-2" />
             <span className="onb-offer-spark onb-offer-spark-3" />
@@ -2432,7 +2452,7 @@ const CustomPersonalizedSummary: React.FC<CustomProps> = ({ goNext, answers }) =
     highlight?: boolean;
   };
 
-  const userName = answers.personalData?.firstName?.trim() || "Champion";
+  const userName = answers.personalData?.firstName?.trim() || "";
   const targetDate = useMemo(() => {
     const d = new Date();
     d.setDate(d.getDate() + 90);
@@ -2446,17 +2466,17 @@ const CustomPersonalizedSummary: React.FC<CustomProps> = ({ goNext, answers }) =
 
   const roadmap = useMemo<RoadmapItem[]>(() => [
     {
-      icon: "🗓️",
+      icon: "🛠️",
       title: "Jour 0 — Préparer ton espace",
       description: "Optimise ton environnement (physique & digital) pour rendre le changement plus simple.",
     },
     {
-      icon: "🧠",
+      icon: "🧭",
       title: "Jour 1 — Déjouer le sevrage",
       description: "Utilise des outils mentaux et physiques pour traverser les envies et te recentrer.",
     },
     {
-      icon: "🔥",
+      icon: "🔁",
       title: "Jour 2 — Battre le jeu des envies",
       description: "Repère tes déclencheurs et remplace-les par des habitudes plus saines et gratifiantes.",
     },
@@ -2468,17 +2488,17 @@ const CustomPersonalizedSummary: React.FC<CustomProps> = ({ goNext, answers }) =
       highlight: true,
     },
     {
-      icon: "🎯",
+      icon: "🔥",
       title: "Jour 3 — Renforcer ton “pourquoi”",
       description: "Transforme tes raisons profondes en motivation quotidienne et en focus.",
     },
     {
-      icon: "🛠️",
+      icon: "🧹",
       title: "Jour 4 — Écraser les symptômes",
       description: "Apprends à gérer la fatigue, le stress ou l'irritabilité avec des “resets” simples.",
     },
     {
-      icon: "🧠",
+      icon: "✨",
       title: "Ton focus revient vite.",
       description:
         "Le brouillard mental commence à se lever et la motivation revient. Sommeil, énergie et clarté sont juste au coin de la rue.",
@@ -2490,7 +2510,7 @@ const CustomPersonalizedSummary: React.FC<CustomProps> = ({ goNext, answers }) =
       description: "Bouge, mange mieux et recharge : ton énergie et ta clarté peuvent revenir rapidement.",
     },
     {
-      icon: "🌍",
+      icon: "🤝",
       title: "Jour 6 — Tu n'es pas seul",
       description: "Connecte-toi à d'autres sur le même chemin. Partage tes victoires et reçois du soutien.",
     },
@@ -2500,7 +2520,7 @@ const CustomPersonalizedSummary: React.FC<CustomProps> = ({ goNext, answers }) =
       description: "Remplace les anciennes habitudes par de vrais objectifs et des actions qui comptent.",
     },
     {
-      icon: "📊",
+      icon: "📈",
       title: "Fin de la semaine 1 — stats & élan",
       description:
         "Les envies sont encore là, mais plus faciles à gérer. Énergie, confiance et motivation se renforcent : c'est ton premier vrai goût de liberté.",
@@ -2585,7 +2605,7 @@ const CustomPersonalizedSummary: React.FC<CustomProps> = ({ goNext, answers }) =
           animate={{ opacity: 1 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
         >
-          {userName}, voici ton plan personnalisé.
+          {userName ? `${userName}, voici ton plan personnalisé.` : "Voici ton plan personnalisé."}
         </motion.h2>
 
         <motion.div
@@ -2648,14 +2668,24 @@ const CustomPersonalizedSummary: React.FC<CustomProps> = ({ goNext, answers }) =
   );
 };
 
-const CustomTrialReminder: React.FC<CustomProps> = ({ goBack }) => {
-  const OFFER_TIMER_SECONDS = 10 * 60;
+const CustomTrialReminder: React.FC<CustomProps> = ({ goBack, answers }) => {
+  const OFFER_TIMER_SECONDS_50 = 10 * 60;
+  const OFFER_TIMER_SECONDS_60 = 5 * 60;
   const [loading, setLoading] = useState(false);
-  const [secondsLeft, setSecondsLeft] = useState(OFFER_TIMER_SECONDS);
+  const [secondsLeft, setSecondsLeft] = useState(OFFER_TIMER_SECONDS_50);
   const [selectedPlan, setSelectedPlan] = useState<"month" | "year">("month");
   const [showSpecialOffer, setShowSpecialOffer] = useState(false);
   const [showExitOfferPrompt, setShowExitOfferPrompt] = useState(false);
-  const [showPayPal, setShowPayPal] = useState(false);
+  const [checkoutEmail, setCheckoutEmail] = useState("");
+  const [checkoutEmailError, setCheckoutEmailError] = useState("");
+  const promoCode = useMemo(
+    () => buildPromoCode(answers.personalData?.firstName, showSpecialOffer ? "60" : "50"),
+    [answers.personalData?.firstName, showSpecialOffer],
+  );
+  const trialMainRef = useRef<HTMLDivElement | null>(null);
+  const pricingSectionRef = useRef<HTMLElement | null>(null);
+  const paymentMethodsRef = useRef<HTMLDivElement | null>(null);
+  const checkoutEmailInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -2667,7 +2697,7 @@ const CustomTrialReminder: React.FC<CustomProps> = ({ goBack }) => {
   useEffect(() => {
     if (secondsLeft === 0 && !showSpecialOffer) {
       setShowSpecialOffer(true);
-      setSecondsLeft(OFFER_TIMER_SECONDS);
+      setSecondsLeft(OFFER_TIMER_SECONDS_60);
     }
   }, [secondsLeft, showSpecialOffer]);
 
@@ -2677,10 +2707,26 @@ const CustomTrialReminder: React.FC<CustomProps> = ({ goBack }) => {
     }
   }, [showSpecialOffer]);
 
+  useEffect(() => {
+    const stepParam = new URLSearchParams(window.location.search).get("step");
+    if (stepParam !== "trial-reminder") return;
+
+    const target = pricingSectionRef.current;
+    if (!target) return;
+
+    const timer = window.setTimeout(() => {
+      target.scrollIntoView({ block: "start" });
+    }, 60);
+
+    return () => window.clearTimeout(timer);
+  }, []);
+
   const minutes = String(Math.floor(secondsLeft / 60)).padStart(2, "0");
   const seconds = String(secondsLeft % 60).padStart(2, "0");
 
   const offerLevel = showSpecialOffer ? "60" : "50";
+  const normalizedCheckoutEmail = checkoutEmail.trim().toLowerCase();
+  const isCheckoutEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedCheckoutEmail);
   const prices = offerLevel === "50"
     ? selectedPlan === "month"
       ? { original: "24,99€", discounted: "12,99€ / mois", saved: "12,00€" }
@@ -2689,23 +2735,38 @@ const CustomTrialReminder: React.FC<CustomProps> = ({ goBack }) => {
       ? { original: "24,99€", discounted: "9,99€ / mois", saved: "15,00€" }
       : { original: "74,99€", discounted: "29,99€ / an", saved: "45,00€" };
 
-  useEffect(() => {
-    setShowPayPal(false);
-  }, [selectedPlan, offerLevel]);
-
-  const startCheckout = async (preferredMethod: "paypal" | "card") => {
+  const startCheckout = async () => {
     if (loading) return;
     setLoading(true);
 
     try {
+      const identity = readFunnelIdentityFromSearch(window.location.search);
+      const checkoutIdentityError = getCheckoutIdentityError(identity);
+      if (checkoutIdentityError) throw new Error(checkoutIdentityError);
+      if (!isCheckoutEmailValid) {
+        setCheckoutEmailError("Champ requis");
+        const emailInput = checkoutEmailInputRef.current;
+        if (emailInput) {
+          emailInput.scrollIntoView({ block: "center", behavior: "smooth" });
+          window.setTimeout(() => emailInput.focus(), 220);
+        }
+        setLoading(false);
+        return;
+      }
+      setCheckoutEmailError("");
+      const { userId, userIdTs, userIdSig } = identity;
+
       const API = String(import.meta.env.VITE_API_BASE_URL || "http://localhost:4242").replace(/\/+$/, "");
       const res = await fetch(`${API}/api/create-checkout-session`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          email: normalizedCheckoutEmail,
           plan: selectedPlan,
           offer: offerLevel,
-          preferredMethod,
+          userId,
+          userIdTs,
+          userIdSig,
         }),
       });
 
@@ -2718,7 +2779,8 @@ const CustomTrialReminder: React.FC<CustomProps> = ({ goBack }) => {
     } catch (err) {
       console.error("Checkout error:", err);
       setLoading(false);
-      alert("Impossible de lancer le paiement pour le moment.");
+      const message = err instanceof Error ? err.message : "Impossible de lancer le paiement pour le moment.";
+      alert(message);
     }
   };
 
@@ -2732,8 +2794,25 @@ const CustomTrialReminder: React.FC<CustomProps> = ({ goBack }) => {
 
   const activateSpecialOffer = () => {
     setShowSpecialOffer(true);
-    setSecondsLeft(OFFER_TIMER_SECONDS);
+    setSecondsLeft(OFFER_TIMER_SECONDS_60);
     setShowExitOfferPrompt(false);
+  };
+
+  const scrollToPaymentMethods = () => {
+    const target = paymentMethodsRef.current;
+    if (!target) return;
+
+    const container = trialMainRef.current;
+    if (container && container.scrollHeight > container.clientHeight + 4) {
+      const containerRect = container.getBoundingClientRect();
+      const targetRect = target.getBoundingClientRect();
+      const destinationTop = Math.max(0, container.scrollTop + (targetRect.top - containerRect.top) - 10);
+      container.scrollTo({ top: destinationTop, behavior: "smooth" });
+      return;
+    }
+
+    const targetTop = window.scrollY + target.getBoundingClientRect().top - 10;
+    window.scrollTo({ top: targetTop, behavior: "smooth" });
   };
 
   return (
@@ -2759,7 +2838,7 @@ const CustomTrialReminder: React.FC<CustomProps> = ({ goBack }) => {
         </div>
       )}
 
-      <div className="onb-trial-main">
+      <div className="onb-trial-main" ref={trialMainRef}>
         {showSpecialOffer && (
           <section className="onb-special-offer-head">
             <p className="onb-special-prev">
@@ -2772,47 +2851,94 @@ const CustomTrialReminder: React.FC<CustomProps> = ({ goBack }) => {
 
         <section className="onb-paywall-timer-wrap">
           <p className="onb-paywall-timer-kicker">Offre -{offerLevel}% expirera dans</p>
-          <div className="onb-paywall-timer">
-            <span>{minutes}</span>:<span>{seconds}</span>
+          <div className="onb-paywall-timer-row">
+            <div className="onb-paywall-timer">
+              <span>{minutes}</span>:<span>{seconds}</span>
+            </div>
+            <button type="button" className="onb-paywall-timer-cta" onClick={scrollToPaymentMethods}>
+              Obtenir mon plan
+            </button>
           </div>
         </section>
 
         <section className="onb-paywall-hero">
+          <div className="onb-paywall-hero-badge">Transformation claire</div>
           <h2>{showSpecialOffer ? "Passe au plan SOBRE avec -60%" : "Ton plan SOBRE personnalisé"}</h2>
-          <p>Un parcours guidé pour reprendre le contrôle durablement.</p>
+          <p>Un système concret pour reprendre le contrôle jour après jour.</p>
           <div className="onb-paywall-compare">
-            <article>
-              <h3>Maintenant</h3>
-              <p>Motivation instable</p>
-              <p>Envies difficiles à gérer</p>
+            <article className="onb-paywall-compare-card is-before">
+              <span className="onb-paywall-compare-tag">Avant</span>
+              <h3>Sans SOBRE</h3>
+              <img
+                className="onb-paywall-compare-visual"
+                src="https://i.imgur.com/fBgv5QO.png"
+                alt="Avant: état actuel sans Sobre"
+                loading="lazy"
+              />
+              <ul>
+                <li>Motivation instable</li>
+                <li>Envies difficiles à gérer</li>
+                <li>Progrès irréguliers</li>
+              </ul>
             </article>
-            <article>
-              <h3>Objectif</h3>
-              <p>Routines solides</p>
-              <p>Progression claire et mesurable</p>
+            <article className="onb-paywall-compare-card is-after">
+              <span className="onb-paywall-compare-tag">Après</span>
+              <h3>Avec SOBRE</h3>
+              <img
+                className="onb-paywall-compare-visual"
+                src="https://i.imgur.com/jf9Uaiz.png"
+                alt="Après: progression avec Sobre"
+                loading="lazy"
+              />
+              <ul>
+                <li>Routines solides</li>
+                <li>Plan simple à suivre</li>
+                <li>Progression claire et mesurable</li>
+              </ul>
             </article>
           </div>
         </section>
 
         <section className="onb-paywall-list">
-          <h3>Ce que tu débloques avec SOBRE</h3>
-          <p>✅ Suivi quotidien</p>
-          <p>✅ Outils anti-envies</p>
-          <p>✅ Progression mesurable</p>
-          <p>✅ Plan étape par étape sur 4 semaines</p>
+          <h3>Comment atteindre ton objectif avec SOBRE</h3>
+          <p>🛑 Active le blocage des apps et contenus déclencheurs</p>
+          <p>🚨 Utilise les outils d’urgence quand une envie apparaît</p>
+          <p>👥 Avance avec la communauté SOBRE</p>
+          <p>🧠 Suis la méthode basée sur les neurosciences</p>
+          <p>📈 Suis ta progression jour après jour</p>
+          <p>🎯 Complète le programme Detox 30-60-90</p>
         </section>
 
         <section className="onb-paywall-proof">
           <h3>Ils avancent avec SOBRE</h3>
           <div className="onb-paywall-reviews">
-            <blockquote>“En quelques jours j’ai retrouvé de la clarté.” ★★★★★</blockquote>
-            <blockquote>“Le suivi quotidien m’aide à tenir.” ★★★★★</blockquote>
-            <blockquote>“Simple, concret, efficace.” ★★★★★</blockquote>
+            <blockquote>
+              <div className="onb-review-stars">★★★★★</div>
+              <p className="onb-review-quote">"En 10 jours j’ai retrouvé de la clarté."</p>
+              <div className="onb-review-meta">— Lucas · 10 jours</div>
+            </blockquote>
+            <blockquote>
+              <div className="onb-review-stars">★★★★★</div>
+              <p className="onb-review-quote">"Le suivi quotidien m’aide vraiment à tenir."</p>
+              <div className="onb-review-meta">— Thomas · 3 semaines</div>
+            </blockquote>
+            <blockquote>
+              <div className="onb-review-stars">★★★★★</div>
+              <p className="onb-review-quote">"Simple, concret, efficace."</p>
+              <div className="onb-review-meta">— Marc · 4 mois</div>
+            </blockquote>
           </div>
         </section>
 
-        <section className="onb-paywall-pricing">
+        <section className="onb-paywall-pricing" ref={pricingSectionRef}>
           <h3>Choisis ton plan</h3>
+          <div className="onb-pricing-promo">
+            <div className="onb-pricing-promo-head">✅ Code promo appliqué</div>
+            <div className="onb-pricing-promo-row">
+              <span className="onb-pricing-promo-code">{promoCode}</span>
+              <span className="onb-pricing-promo-timer">{minutes}:{seconds}</span>
+            </div>
+          </div>
 
           <article
             className={`onb-paywall-plan ${selectedPlan === "month" ? "is-selected" : ""}`}
@@ -2840,20 +2966,35 @@ const CustomTrialReminder: React.FC<CustomProps> = ({ goBack }) => {
             <div className="onb-paywall-price">{offerLevel === "50" ? "37,99€ / an" : "29,99€ / an"}</div>
           </article>
 
-          <p className="onb-paywall-safe">🔒 Paiement sécurisé • Annulation facile</p>
         </section>
 
         <section className="onb-checkout-block">
-          <div className="onb-checkout-reserved">⏰ Remise réservée pendant {minutes}:{seconds}</div>
-
           <h3>
-            Rejoins plus de <span>700 000 utilisateurs</span>
+            Rejoins plus de <span>5000 utilisateurs</span>
             <br />
             qui reprennent le contrôle avec SOBRE
           </h3>
 
           <div className="onb-checkout-card">
-            <h4>Safe checkout</h4>
+            <h4>Paiement sécurisé</h4>
+
+            <div className="onb-checkout-email">
+              <label htmlFor="checkout-email">Email de connexion</label>
+              <input
+                id="checkout-email"
+                ref={checkoutEmailInputRef}
+                type="email"
+                inputMode="email"
+                autoComplete="email"
+                placeholder="ton@email.com"
+                value={checkoutEmail}
+                onChange={(e) => {
+                  setCheckoutEmail(e.target.value);
+                  if (checkoutEmailError) setCheckoutEmailError("");
+                }}
+              />
+              {checkoutEmailError ? <p className="onb-checkout-email-error">{checkoutEmailError}</p> : null}
+            </div>
 
             <div className="onb-checkout-row">
               <span>SOBRE Premium</span>
@@ -2863,64 +3004,84 @@ const CustomTrialReminder: React.FC<CustomProps> = ({ goBack }) => {
               <span>Offre d’introduction -{offerLevel}%</span>
               <strong>-{prices.saved}</strong>
             </div>
-            <div className="onb-checkout-code">Code appliqué : {showSpecialOffer ? "SOBRE60" : "SOBRE50"}</div>
+            <div className="onb-checkout-code">CODE_PROMO : {promoCode}</div>
 
             <div className="onb-checkout-total">
               <span>Total</span>
               <strong>{prices.discounted}</strong>
             </div>
-            <p className="onb-checkout-saved">Tu économises {prices.saved} ({offerLevel}% off)</p>
             
-            {!showPayPal ? (
-              <button className="onb-checkout-paypal" onClick={() => setShowPayPal(true)} disabled={loading}>
-                {loading ? "Chargement..." : "PayPal • Payer"}
+            <div className="onb-payment-methods" ref={paymentMethodsRef}>
+              <button className="onb-checkout-apple" onClick={startCheckout} disabled={loading}>
+                <span className="onb-apple-pay-content">
+                  <svg
+                    className="onb-apple-pay-icon"
+                    viewBox="0 0 16 16"
+                    aria-hidden="true"
+                  >
+                    <path
+                      fill="currentColor"
+                      d="M11.182.008c-2.345-.14-4.54 1.262-5.706 2.667-1.169 1.413-2.153 3.508-1.79 5.554 2.606.2 5.287-1.458 6.658-3.085C11.714 3.612 12.701 1.526 11.182.008zM13.682 5.226c-1.31-.078-2.422.744-3.048.744-.627 0-1.59-.705-2.625-.685-1.35.02-2.598.784-3.29 1.996-1.408 2.453-.36 6.084 1.01 8.063.67.968 1.47 2.055 2.515 2.016 1.005-.04 1.385-.652 2.602-.652 1.217 0 1.56.652 2.623.63 1.086-.02 1.773-.987 2.44-1.958.77-1.12 1.086-2.204 1.104-2.26-.024-.008-2.12-.814-2.142-3.243-.02-2.032 1.66-3.003 1.736-3.048-.95-1.386-2.425-1.54-2.925-1.603z"
+                    />
+                  </svg>
+                  <span>Pay</span>
+                </span>
               </button>
-            ) : (
-              <div style={{ marginTop: 10 }}>
-                <PayPalSubscriptionButtons
-                  plan={selectedPlan}
-                  offer={offerLevel as "50" | "60"}
-                  onApproved={(subscriptionId) => {
-                    window.location.href = `/success?paypal_subscription_id=${encodeURIComponent(subscriptionId)}`;
-                  }}
-                />
-              </div>
-            )}
 
-            <button className="onb-checkout-apple" onClick={() => startCheckout("card")} disabled={loading}>
-               Pay
-            </button>
-
-            <div className="onb-checkout-fields">
-              <div>XXXX XXXX XXXX XXXX</div>
-              <div>
-                <span>MM/YY</span>
-                <span>CVV</span>
-              </div>
+              <button className="onb-checkout-confirm" onClick={startCheckout} disabled={loading}>
+                🔒 Activer l’abonnement
+              </button>
             </div>
 
-            <button className="onb-checkout-confirm" onClick={() => startCheckout("card")} disabled={loading}>
-              🔒 CONFIRMER LE PAIEMENT
-            </button>
+          </div>
+
+          <div className="onb-checkout-meta">
+            <p className="onb-checkout-disclaimer">
+              En cliquant sur “Activer l’abonnement”, tu acceptes le renouvellement automatique. Annulation à tout
+              moment depuis les réglages de ton compte.
+            </p>
+            <div className="onb-checkout-trust">✅ Paiement sûr et sécurisé</div>
+            <div className="onb-checkout-brands" aria-label="Moyens de paiement pris en charge">
+              <span>Apple Pay</span>
+              <span>VISA</span>
+              <span>Mastercard</span>
+              <span>AMEX</span>
+            </div>
           </div>
         </section>
       </div>
 
       <div className="onb-paywall-cta-wrap">
-        <button className="onb-btn-gold onb-trial-btn" onClick={() => startCheckout("card")} disabled={loading}>
-          {loading ? "Chargement..." : showSpecialOffer ? "Activer -60% maintenant" : "Continuer"}
+        <button className="onb-btn-gold onb-trial-btn" onClick={startCheckout} disabled={loading}>
+          {loading ? "Chargement..." : showSpecialOffer ? "Activer -60% maintenant" : "Commencer maintenant"}
         </button>
-        <p className="onb-paywall-legal">
-          En continuant, tu actives ton offre promotionnelle et ton accès immédiat à SOBRE Premium.
-        </p>
+        <p className="onb-paywall-legal">Annulation à tout moment</p>
       </div>
     </div>
   );
 };
 export default function OnboardingFirst5({ onDone, onLoginClick }: Props) {
-  const [stepIndex, setStepIndex] = useState(0);
+  const [stepIndex, setStepIndex] = useState(() => {
+    const stepParam = new URLSearchParams(window.location.search).get("step");
+    if (!stepParam || stepParam === "trial-reminder") {
+      const trialReminderIndex = STEP_ORDER.indexOf("trial-reminder");
+      return trialReminderIndex >= 0 ? trialReminderIndex : 0;
+    }
+    const requestedStepIndex = STEP_ORDER.indexOf(stepParam as StepId);
+    return requestedStepIndex >= 0 ? requestedStepIndex : 0;
+  });
   const [direction, setDirection] = useState<1 | -1>(1);
   const [answers, setAnswers] = useState<Answers>({ quizAnswers: {} });
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("step")) return;
+
+    params.set("step", "trial-reminder");
+    const nextSearch = params.toString();
+    const nextUrl = `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ""}${window.location.hash}`;
+    window.history.replaceState({}, "", nextUrl);
+  }, []);
 
   const step = STEP_ORDER[stepIndex];
   const activePageVariants = CINEMATIC_SLIDE_STEPS.includes(step)
@@ -3016,3 +3177,5 @@ export default function OnboardingFirst5({ onDone, onLoginClick }: Props) {
     </div>
   );
 }
+
+
