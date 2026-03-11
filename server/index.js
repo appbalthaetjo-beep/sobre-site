@@ -1,15 +1,15 @@
-﻿import "dotenv/config";
 import express from "express";
 import cors from "cors";
+import dotenv from "dotenv";
 import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
-import dotenv from "dotenv";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createHmac, timingSafeEqual } from "node:crypto";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
 dotenv.config({ path: path.resolve(__dirname, ".env"), override: true });
 
@@ -20,10 +20,10 @@ const DEFAULT_CLIENT_URL = "http://localhost:5173";
 const allowedOrigins = new Set(
   [process.env.CLIENT_URL, DEFAULT_CLIENT_URL, "http://127.0.0.1:5173"].filter(Boolean),
 );
+
 app.use(
   cors({
     origin(origin, cb) {
-      // Allow same-origin / curl / server-to-server calls
       if (!origin) return cb(null, true);
       if (allowedOrigins.has(origin)) return cb(null, true);
       return cb(new Error(`CORS: origin not allowed: ${origin}`));
@@ -32,10 +32,10 @@ app.use(
 );
 app.use(express.json());
 
-console.log("âœ… index.js loaded");
+console.log("index.js loaded");
 
 if (!process.env.STRIPE_SECRET_KEY) {
-  console.error("âŒ STRIPE_SECRET_KEY manquante dans server/.env");
+  console.error("STRIPE_SECRET_KEY manquante dans server/.env");
   process.exit(1);
 }
 
@@ -129,7 +129,6 @@ function buildUserIdSignature({ userId, userIdTs, signatureSecret }) {
 }
 
 function isTrustedUserId({ userId, userIdTs, userIdSig }) {
-  // If no signature secret is configured, keep current behavior (sandbox/dev compatibility).
   const signatureSecret = getSignatureSecret();
   if (!signatureSecret) return true;
 
@@ -149,6 +148,7 @@ function isTrustedUserId({ userId, userIdTs, userIdSig }) {
     userIdTs: String(Math.floor(ts)),
     signatureSecret,
   });
+
   return secureEquals(sig, expected);
 }
 
@@ -158,7 +158,10 @@ function buildSignedFunnelUrl({ userId, step }) {
 
   const userIdTs = String(Math.floor(Date.now() / 1000));
   const userIdSig = buildUserIdSignature({ userId, userIdTs, signatureSecret });
-  const funnelBase = String(process.env.FUNNEL_BASE_URL || process.env.CLIENT_URL || DEFAULT_CLIENT_URL).replace(/\/+$/, "");
+  const funnelBase = String(process.env.FUNNEL_BASE_URL || process.env.CLIENT_URL || DEFAULT_CLIENT_URL).replace(
+    /\/+$/,
+    "",
+  );
   const funnelStep = String(step || "trial-reminder").trim() || "trial-reminder";
   const url = `${funnelBase}/start-first5?step=${encodeURIComponent(funnelStep)}&userId=${encodeURIComponent(userId)}&userIdTs=${encodeURIComponent(userIdTs)}&userIdSig=${encodeURIComponent(userIdSig)}`;
 
@@ -172,7 +175,11 @@ app.post("/api/create-checkout-session", async (req, res) => {
     const appUserIdTs = String(userIdTs || "").trim();
     const appUserIdSig = String(userIdSig || "").trim();
     const normalizedEmail = normalizeEmail(email);
-    if (!normalizedEmail) return res.status(400).json({ error: "Checkout bloque: email manquant" });
+
+    if (!normalizedEmail) {
+      return res.status(400).json({ error: "Checkout bloque: email manquant" });
+    }
+
     if (requestedUserId && !isTrustedUserId({ userId: requestedUserId, userIdTs, userIdSig })) {
       return res.status(401).json({ error: "userId non verifie" });
     }
@@ -182,11 +189,13 @@ app.post("/api/create-checkout-session", async (req, res) => {
     if (!appUserId) {
       return res.status(500).json({ error: "Impossible de resoudre le user Supabase pour cet email" });
     }
+
     if (requestedUserId && requestedUserId !== appUserId) {
       return res.status(409).json({
         error: `Identite incoherente: funnel userId ${requestedUserId} != Supabase user.id ${appUserId}`,
       });
     }
+
     if (isSandboxAppUserId(appUserId) && !ALLOW_SANDBOX_CHECKOUT) {
       return res.status(400).json({ error: `Checkout bloque: app_user_id sandbox refuse (${SANDBOX_DEFAULT_USER_ID})` });
     }
@@ -200,6 +209,7 @@ app.post("/api/create-checkout-session", async (req, res) => {
       cancelParams.set("userIdTs", appUserIdTs);
       cancelParams.set("userIdSig", appUserIdSig);
     }
+
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       client_reference_id: appUserId,
@@ -215,7 +225,7 @@ app.post("/api/create-checkout-session", async (req, res) => {
 
     res.json({ url: session.url, app_user_id: appUserId, auth_email: normalizedEmail });
   } catch (e) {
-    console.error("âŒ Stripe error:", e);
+    console.error("Stripe error:", e);
     res.status(500).json({ error: e?.message || "Erreur Stripe" });
   }
 });
@@ -227,6 +237,7 @@ app.post("/api/funnel/signed-url", (req, res) => {
     if (!expectedSignerApiKey) {
       return res.status(500).json({ error: "FUNNEL_SIGNER_API_KEY manquante" });
     }
+
     if (!signerApiKey || !secureEquals(signerApiKey, expectedSignerApiKey)) {
       return res.status(401).json({ error: "acces refuse" });
     }
@@ -243,7 +254,7 @@ app.post("/api/funnel/signed-url", (req, res) => {
       expires_in_seconds: getSignatureMaxAgeSeconds(),
     });
   } catch (e) {
-    console.error("❌ Signed funnel URL error:", e);
+    console.error("Signed funnel URL error:", e);
     res.status(500).json({ error: "Erreur generation URL signee" });
   }
 });
@@ -274,16 +285,72 @@ app.get("/api/stripe/session", async (req, res) => {
     if (e?.type === "StripeInvalidRequestError") {
       return res.status(404).json({ error: "Session Stripe introuvable" });
     }
-    console.error("âŒ Stripe session retrieve error:", e);
-    res.status(500).json({ error: "Erreur rÃ©cupÃ©ration session Stripe" });
+    console.error("Stripe session retrieve error:", e);
+    res.status(500).json({ error: "Erreur recuperation session Stripe" });
   }
 });
 
+function getPayPalApiBaseUrl() {
+  const env = (process.env.PAYPAL_ENV || "sandbox").toLowerCase();
+  return env === "live" ? "https://api-m.paypal.com" : "https://api-m.sandbox.paypal.com";
+}
 
-const PORT = process.env.PORT || 4242;
-console.log("âœ… BOOT OK - going to listen on", PORT);
+async function getPayPalAccessToken() {
+  const clientId = process.env.PAYPAL_CLIENT_ID;
+  const clientSecret = process.env.PAYPAL_CLIENT_SECRET;
+  if (!clientId || !clientSecret) {
+    throw new Error("PAYPAL_CLIENT_ID/PAYPAL_CLIENT_SECRET manquants dans server/.env");
+  }
 
-app.listen(PORT, () => {
-  console.log(`âœ… Stripe server running on http://localhost:${PORT}`);
+  const basic = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
+  const resp = await fetch(`${getPayPalApiBaseUrl()}/v1/oauth2/token`, {
+    method: "POST",
+    headers: {
+      Authorization: `Basic ${basic}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: new URLSearchParams({ grant_type: "client_credentials" }).toString(),
+  });
+  const json = await resp.json().catch(() => ({}));
+  if (!resp.ok) {
+    throw new Error(`PayPal token error: ${resp.status} ${JSON.stringify(json)}`);
+  }
+  if (!json?.access_token) throw new Error("PayPal token: access_token manquant");
+  return json.access_token;
+}
+
+app.get("/api/paypal/subscription", async (req, res) => {
+  try {
+    const subscriptionId = String(req.query.subscription_id || "");
+    if (!subscriptionId) return res.status(400).json({ error: "subscription_id manquant" });
+
+    const token = await getPayPalAccessToken();
+    const resp = await fetch(`${getPayPalApiBaseUrl()}/v1/billing/subscriptions/${subscriptionId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+    const json = await resp.json().catch(() => ({}));
+    if (!resp.ok) {
+      return res.status(resp.status).json({ error: "Erreur recuperation subscription PayPal", details: json });
+    }
+
+    res.json({
+      id: json.id || null,
+      status: json.status || null,
+      plan_id: json.plan_id || null,
+      subscriber_email: json.subscriber?.email_address || null,
+    });
+  } catch (e) {
+    console.error("PayPal subscription retrieve error:", e);
+    res.status(500).json({ error: "Erreur PayPal" });
+  }
 });
 
+const PORT = process.env.PORT || 4242;
+console.log("BOOT OK - going to listen on", PORT);
+
+app.listen(PORT, () => {
+  console.log(`Stripe server running on http://localhost:${PORT}`);
+});

@@ -2,6 +2,7 @@
 
 Ce repo supporte:
 - Stripe Checkout (abonnements): carte + Apple Pay (si active sur Stripe et domaine verifie)
+- PayPal Subscriptions: bouton PayPal avec `plan_id` par offre/plan
 
 ## Variables d'environnement
 
@@ -31,3 +32,4 @@ Ouvrir: `http://localhost:5173/start-first5`
 ## Notes Apple Pay
 
 Apple Pay sur le web requiert un domaine HTTPS verifie chez Stripe (localhost ne suffit pas).
+
