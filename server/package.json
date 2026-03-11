@@ -1,0 +1,15 @@
+{
+  "name": "sobre-stripe-server",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node index.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.99.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
+    "express": "^4.19.2",
+    "stripe": "^16.12.0"
+  }
+}

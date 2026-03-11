@@ -1,7 +1,7 @@
 ﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, type Variants } from "framer-motion";
 import "./onboarding-first5.css";
-
+import { getCheckoutIdentityError, readFunnelIdentityFromSearch } from "../lib/funnelIdentity";
 type StepId =
   | "index"
   | "story"
@@ -101,8 +101,8 @@ const STEP_ORDER: StepId[] = [
   "personal-goals",
   "commitment-signature",
   "rate-us",
-  "free-trial",
   "personalized-summary",
+  "free-trial",
   "trial-reminder",
 ];
 
@@ -115,7 +115,7 @@ const Logo = () => (
   />
 );
 
-const defaultPageVariants = {
+const defaultPageVariants: Variants = {
   enter: (direction: 1 | -1) => ({
     x: direction > 0 ? 40 : -40,
     opacity: 0,
@@ -124,7 +124,7 @@ const defaultPageVariants = {
     x: 0,
     opacity: 1,
     transition: {
-      type: "spring",
+      type: "spring" as const,
       stiffness: 360,
       damping: 34,
       mass: 0.9,
@@ -137,8 +137,8 @@ const defaultPageVariants = {
   }),
 };
 
-const cinematicPageVariants = {
-  enter: (_direction: 1 | -1) => ({
+const cinematicPageVariants: Variants = {
+  enter: () => ({
     opacity: 0,
     scale: 0.985,
     y: 14,
@@ -151,7 +151,7 @@ const cinematicPageVariants = {
     filter: "blur(0px)",
     transition: { duration: 0.52, ease: [0.22, 1, 0.36, 1] as const },
   },
-  exit: (_direction: 1 | -1) => ({
+  exit: () => ({
     opacity: 0,
     scale: 1.01,
     y: -10,
@@ -210,6 +210,25 @@ function clamp01(value: number) {
   return Math.min(1, Math.max(0, value));
 }
 
+const PROMO_MONTH_SHORT = ["JAN", "FEV", "MAR", "AVR", "MAI", "JUN", "JUL", "AOU", "SEP", "OCT", "NOV", "DEC"];
+
+function getPromoUserPart(firstName?: string) {
+  const normalized = String(firstName || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z]/g, "")
+    .toUpperCase();
+  return (normalized.slice(0, 3) || "USR").padEnd(3, "X");
+}
+
+function buildPromoCode(firstName: string | undefined, offer: "50" | "60") {
+  const userPart = getPromoUserPart(firstName);
+  if (offer === "60") return `${userPart}_FINAL`;
+  const monthPart = PROMO_MONTH_SHORT[new Date().getMonth()] || "JAN";
+  const yearPart = String(new Date().getFullYear());
+  return `${userPart}_${monthPart}${yearPart}`;
+}
+
 function computeQuizResult(answers: Record<string, string | number>) {
   const maxPossibleScore = Object.values(SCORE_WEIGHTS)
     .map((mapping) => Math.max(...Object.values(mapping)))
@@ -257,7 +276,6 @@ function useTypewriterMessages(
 
   useEffect(() => {
     return () => clearAllTimers();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -961,7 +979,7 @@ const CustomQuestion12: React.FC<CustomProps> = ({ goNext, goBack, answers, setA
 
       <div className="onb-q12-bottom">
         <button className="onb-q12-next" onClick={handleContinue}>
-          Suivant →
+          Suivant ?
         </button>
       </div>
     </div>
@@ -989,8 +1007,8 @@ const CustomQuestion13: React.FC<CustomProps> = ({ goNext, goBack, answers, setA
       quizAnswers: { ...prev.quizAnswers, recent_effects: id },
     }));
 
-    leaveTimer.current && window.clearTimeout(leaveTimer.current);
-    nextTimer.current && window.clearTimeout(nextTimer.current);
+    if (leaveTimer.current) window.clearTimeout(leaveTimer.current);
+    if (nextTimer.current) window.clearTimeout(nextTimer.current);
 
     leaveTimer.current = window.setTimeout(() => setIsLeaving(true), 800);
     nextTimer.current = window.setTimeout(() => goNext(), 1200);
@@ -1023,7 +1041,7 @@ const CustomQuestion13: React.FC<CustomProps> = ({ goNext, goBack, answers, setA
             <p>🚀 Manque de motivation pour commencer ou terminer des tâches</p>
             <p>🎯 Difficultés de concentration</p>
             <p>💞 Perte d’intérêt pour l’intimité</p>
-            <p>🍆 Difficultés d’érection</p>
+            <p>⚠️ Difficultés d’érection</p>
           </div>
 
           <div className="onb-choice-list">
@@ -1137,8 +1155,8 @@ const CustomResults: React.FC<CustomProps> = ({ goNext, goBack, answers }) => {
   const deltaLabel = delta >= 0 ? `${Math.round(delta)}%` : `${Math.abs(Math.round(delta))}%`;
   const deltaText =
     delta >= 0
-      ? `${deltaLabel} de dépendance en plus que la moyenne ↘`
-      : `${deltaLabel} de dépendance en moins que la moyenne ↘`;
+      ? `${deltaLabel} de dépendance en plus que la moyenne ?`
+      : `${deltaLabel} de dépendance en moins que la moyenne ?`;
 
   return (
     <div className="onb-screen onb-black">
@@ -1201,19 +1219,19 @@ const CustomSymptoms: React.FC<CustomProps> = ({ goNext, goBack, answers, setAns
     {
       title: "Mental",
       symptoms: [
-        { id: "demotivated", label: "💤 Se sentir démotivé" },
+        { id: "demotivated", label: "😞 Se sentir démotivé" },
         { id: "lack_ambition", label: "🎯 Manque d’ambition pour poursuivre des objectifs" },
-        { id: "concentration", label: "🎯 Difficulté à se concentrer" },
-        { id: "memory", label: "🧠 Mauvaise mémoire / “brouillard mental”" },
+        { id: "concentration", label: "🧠 Difficulté à se concentrer" },
+        { id: "memory", label: "🌫️ Mauvaise mémoire / “brouillard mental”" },
         { id: "anxiety", label: "😰 Anxiété générale" },
       ],
     },
     {
       title: "Physique",
       symptoms: [
-        { id: "fatigue", label: "😮‍💨 Fatigue et léthargie" },
-        { id: "low_libido", label: "💓 Faible désir sexuel" },
-        { id: "weak_erections", label: "🍆 Érections faibles sans pornographie" },
+        { id: "fatigue", label: "💤 Fatigue et léthargie" },
+        { id: "low_libido", label: "💔 Faible désir sexuel" },
+        { id: "weak_erections", label: "⚠️ Érections faibles sans pornographie" },
       ],
     },
     {
@@ -1221,9 +1239,9 @@ const CustomSymptoms: React.FC<CustomProps> = ({ goNext, goBack, answers, setAns
       symptoms: [
         { id: "low_confidence", label: "💔 Faible confiance en soi" },
         { id: "unattractive", label: "🪞 Se sentir peu attirant ou indigne d’amour" },
-        { id: "unsatisfying_sex", label: "🧩 Rapports sexuels insatisfaisants ou sans plaisir" },
-        { id: "reduced_socializing", label: "💬 Désir réduit de socialiser" },
-        { id: "isolated", label: "😔 Se sentir isolé des autres" },
+        { id: "unsatisfying_sex", label: "🫥 Rapports sexuels insatisfaisants ou sans plaisir" },
+        { id: "reduced_socializing", label: "🧍 Désir réduit de socialiser" },
+        { id: "isolated", label: "🌫️ Se sentir isolé des autres" },
       ],
     },
     {
@@ -1483,13 +1501,13 @@ const CustomSlide7: React.FC<CustomProps> = ({ goNext }) => {
           <div className="onb-slide7-badge">75</div>
         </div>
         <p className="onb-slide7-post-text">Aujourd&apos;hui ça fait 75 jours sans porno... je sens déjà la différence.</p>
-        <div className="onb-slide7-post-meta">😎 Jacob • 0 jours • il y a 1 jour</div>
+        <div className="onb-slide7-post-meta">👤 Jacob • 0 jours • il y a 1 jour</div>
       </div>
 
       <div className="onb-slide7-stats-row">
-        <div className="onb-slide7-stat-pill">💬 305</div>
-        <div className="onb-slide7-stat-pill">👍 1224</div>
-        <div className="onb-slide7-stat-pill">👎 5</div>
+        <div className="onb-slide7-stat-pill">❤️ 305</div>
+        <div className="onb-slide7-stat-pill">💬 1224</div>
+        <div className="onb-slide7-stat-pill">🔥 5</div>
       </div>
 
       <div className="onb-slide7-jake-card">
@@ -1545,7 +1563,7 @@ const CustomSlide8: React.FC<CustomProps> = ({ goNext }) => {
         </div>
         <div className="onb-slide8-card">
           <div className="onb-slide8-head">
-            <span className="onb-slide8-head-check">✓</span>
+            <span className="onb-slide8-head-check">?</span>
             <span>Sites bloqués</span>
             <span className="onb-slide8-head-count">· {blocked ? "1249" : "1248"}</span>
           </div>
@@ -1558,7 +1576,7 @@ const CustomSlide8: React.FC<CustomProps> = ({ goNext }) => {
                 <small>{blocked ? "Bloqué" : "Blocage..."}</small>
               </div>
             </div>
-            <div className="onb-slide8-site-status">✓</div>
+            <div className="onb-slide8-site-status">?</div>
           </div>
 
           <div className={`onb-slide8-site ${blocked ? "is-blocked" : ""}`}>
@@ -1572,7 +1590,7 @@ const CustomSlide8: React.FC<CustomProps> = ({ goNext }) => {
                 <small>{blocked ? "Bloqué" : "Blocage..."}</small>
               </div>
             </div>
-            <div className="onb-slide8-site-status">✓</div>
+            <div className="onb-slide8-site-status">?</div>
           </div>
         </div>
       </div>
@@ -1645,12 +1663,12 @@ const CustomSlide9: React.FC<CustomProps> = ({ goNext }) => {
 
       <div className="onb-slide9-controls-wrap">
         <div className="onb-slide9-controls-top">
-          <div className="onb-slide9-mini-btn">−</div>
+          <div className="onb-slide9-mini-btn">-</div>
           <div className="onb-slide9-time-pill">5 min</div>
           <div className="onb-slide9-mini-btn">+</div>
           <div className="onb-slide9-add-pill">+ Ajouter des apps</div>
         </div>
-        <div className="onb-slide9-start-btn">▶ Démarrer le blocage</div>
+        <div className="onb-slide9-start-btn">? Démarrer le blocage</div>
       </div>
 
       <div className="onb-slide-copy onb-slide9-copy">
@@ -1853,10 +1871,10 @@ const CustomPastAttempts: React.FC<CustomProps> = (p) => (
     questionKey="past_porn_change_attempt"
     showSkip={false}
     choices={[
-      { id: "yes_easy", label: "✅ Oui, et ce n’était pas difficile" },
-      { id: "yes_somewhat", label: "🤔 Oui, mais c’était un peu difficile" },
-      { id: "yes_very", label: "😓 Oui, et c’était très difficile" },
-      { id: "no_first_time", label: "🙅 Non, c’est la première fois" },
+      { id: "yes_easy", label: "🙂 Oui, et ce n’était pas difficile" },
+      { id: "yes_somewhat", label: "😓 Oui, mais c’était un peu difficile" },
+      { id: "yes_very", label: "😣 Oui, et c’était très difficile" },
+      { id: "no_first_time", label: "🆕 Non, c’est la première fois" },
     ]}
   />
 );
@@ -1876,11 +1894,11 @@ const CustomRewiringAdvantages: React.FC<CustomProps> = ({ goNext }) => (
 
 const CustomPersonalGoals: React.FC<CustomProps> = ({ goNext, goBack, answers, setAnswers }) => {
   const goals = [
-    { id: "stop_completely", title: "🏁 Arrêter complètement" },
+    { id: "stop_completely", title: "🛑 Arrêter complètement" },
     { id: "improve_relationships", title: "❤️ Améliorer mes relations" },
-    { id: "regain_energy", title: "💪 Retrouver de l’énergie / de la motivation" },
+    { id: "regain_energy", title: "⚡ Retrouver de l’énergie / de la motivation" },
     { id: "mental_clarity", title: "🧠 Améliorer ma clarté mentale" },
-    { id: "reduce_anxiety", title: "😌 Réduire l’anxiété / retrouver la paix intérieure" },
+    { id: "reduce_anxiety", title: "🕊️ Réduire l’anxiété / retrouver la paix intérieure" },
   ];
   const [selected, setSelected] = useState<string[]>(answers.userGoals ?? []);
 
@@ -2119,7 +2137,7 @@ const CustomRateUs: React.FC<CustomProps> = ({ goNext }) => {
           porno
         </h2>
         <p>Chaque note nous aide à lutter contre l’industrie du porno et à aider plus de personnes.</p>
-        <div className="onb-rate-stars">★ ★ ★ ★ ★</div>
+        <div className="onb-rate-stars">★★★★★</div>
         <div className="onb-rate-kicker">Plus de 300 avis 5 étoiles</div>
         <div className="onb-rate-avatars">
           <img src="https://i.imgur.com/pMpaMOd.png" alt="" />
@@ -2162,86 +2180,279 @@ const CustomRateUs: React.FC<CustomProps> = ({ goNext }) => {
       </div>
 
       <button className="onb-btn-gold onb-rate-btn" onClick={goNext}>
-        Continuer →
+        Continuer
       </button>
     </div>
   );
 };
 
-const CustomFreeTrial: React.FC<CustomProps> = ({ goBack, goNext }) => (
-  <div className="onb-screen onb-gradient-gold onb-free-screen">
-    <div className="onb-question-header">
-      <button className="onb-back-btn onb-back-btn-dark" onClick={goBack} aria-label="Retour">
-        {"\u2190"}
-      </button>
-      <div className="onb-header-spacer" />
-      <div className="onb-header-spacer" />
-    </div>
+const CustomFreeTrial: React.FC<CustomProps> = ({ goBack, goNext, answers }) => {
+  const [phase, setPhase] = useState<"scratch" | "reveal">("scratch");
+  const [isScratching, setIsScratching] = useState(false);
+  const [scratchProgress, setScratchProgress] = useState(0);
+  const [isRevealing, setIsRevealing] = useState(false);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const scratchHostRef = useRef<HTMLDivElement | null>(null);
+  const scratchCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const lastPointRef = useRef<{ x: number; y: number } | null>(null);
+  const scratchedCellsRef = useRef<Uint8Array | null>(null);
+  const scratchedCountRef = useRef(0);
+  const revealedRef = useRef(false);
+  const promoCode = useMemo(() => buildPromoCode(answers.personalData?.firstName, "50"), [answers.personalData?.firstName]);
 
-    <div className="onb-free-main">
-      <div className="onb-free-pill">🎁 Essai gratuit</div>
-      <img src="https://i.imgur.com/7ZJ96b0.png" alt="" className="onb-free-hero" />
-      <div className="onb-free-copy">
-        <h2>
-          SOBRE est gratuit
-          <br />à essayer pour toi.
-        </h2>
-        <p>
-          On dépend du soutien de personnes comme toi pour continuer à développer un outil qui aide à arrêter la
-          pornographie et à reprendre le contrôle.
-        </p>
-      </div>
-    </div>
+  const GRID_SIZE = 36;
+  const REVEAL_THRESHOLD = 28;
+  const BRUSH_RADIUS = 28;
 
-    <button className="onb-free-btn" onClick={goNext}>
-      Ça marche
-    </button>
-  </div>
-);
+  const setupScratchLayer = useCallback(() => {
+    const host = scratchHostRef.current;
+    const canvas = scratchCanvasRef.current;
+    if (!host || !canvas) return;
 
-const CustomReferralCode: React.FC<CustomProps> = ({ goBack, goNext, answers, setAnswers }) => {
-  const [code, setCode] = useState(answers.referralCode ?? "");
+    const rect = host.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    const width = Math.max(1, Math.floor(rect.width));
+    const height = Math.max(1, Math.floor(rect.height));
 
-  const saveAndNext = () => {
-    setAnswers((prev) => ({ ...prev, referralCode: code.trim().toUpperCase() }));
-    goNext();
+    canvas.width = Math.floor(width * dpr);
+    canvas.height = Math.floor(height * dpr);
+    canvas.style.width = `${width}px`;
+    canvas.style.height = `${height}px`;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.globalCompositeOperation = "source-over";
+    ctx.clearRect(0, 0, width, height);
+
+    const gradient = ctx.createLinearGradient(0, 0, width, height);
+    gradient.addColorStop(0, "#2e2e31");
+    gradient.addColorStop(0.5, "#39393d");
+    gradient.addColorStop(1, "#2b2b2e");
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, width, height);
+
+    ctx.strokeStyle = "rgba(255,255,255,0.08)";
+    ctx.lineWidth = 1;
+    for (let y = 0; y < height; y += 12) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(width, y + 6);
+      ctx.stroke();
+    }
+
+    scratchedCellsRef.current = new Uint8Array(GRID_SIZE * GRID_SIZE);
+    scratchedCountRef.current = 0;
+    setScratchProgress(0);
+    revealedRef.current = false;
+  }, []);
+
+  useEffect(() => {
+    if (phase !== "scratch") return;
+    setupScratchLayer();
+    const onResize = () => setupScratchLayer();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [phase, setupScratchLayer]);
+
+  const getCanvasPoint = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    const canvas = scratchCanvasRef.current;
+    if (!canvas) return null;
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: event.clientX - rect.left,
+      y: event.clientY - rect.top,
+    };
+  };
+
+  const updateProgressAt = (x: number, y: number, radius: number) => {
+    const canvas = scratchCanvasRef.current;
+    const cells = scratchedCellsRef.current;
+    if (!canvas || !cells) return;
+
+    const w = canvas.clientWidth;
+    const h = canvas.clientHeight;
+    if (!w || !h) return;
+
+    const minX = Math.max(0, Math.floor(((x - radius) / w) * GRID_SIZE));
+    const maxX = Math.min(GRID_SIZE - 1, Math.floor(((x + radius) / w) * GRID_SIZE));
+    const minY = Math.max(0, Math.floor(((y - radius) / h) * GRID_SIZE));
+    const maxY = Math.min(GRID_SIZE - 1, Math.floor(((y + radius) / h) * GRID_SIZE));
+
+    for (let gy = minY; gy <= maxY; gy += 1) {
+      for (let gx = minX; gx <= maxX; gx += 1) {
+        const cellCenterX = ((gx + 0.5) / GRID_SIZE) * w;
+        const cellCenterY = ((gy + 0.5) / GRID_SIZE) * h;
+        const dx = cellCenterX - x;
+        const dy = cellCenterY - y;
+        if (dx * dx + dy * dy <= radius * radius) {
+          const idx = gy * GRID_SIZE + gx;
+          if (!cells[idx]) {
+            cells[idx] = 1;
+            scratchedCountRef.current += 1;
+          }
+        }
+      }
+    }
+
+    const pct = (scratchedCountRef.current / cells.length) * 100;
+    setScratchProgress(pct);
+    if (pct >= REVEAL_THRESHOLD && !revealedRef.current) {
+      revealedRef.current = true;
+      setIsRevealing(true);
+      window.setTimeout(() => {
+        setPhase("reveal");
+        setIsScratching(false);
+        setIsRevealing(false);
+        setIsDrawing(false);
+      }, 320);
+    }
+  };
+
+  const eraseAt = (x: number, y: number, from?: { x: number; y: number } | null) => {
+    const canvas = scratchCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    ctx.globalCompositeOperation = "destination-out";
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.lineWidth = BRUSH_RADIUS * 2;
+
+    if (from) {
+      ctx.beginPath();
+      ctx.moveTo(from.x, from.y);
+      ctx.lineTo(x, y);
+      ctx.stroke();
+    } else {
+      ctx.beginPath();
+      ctx.arc(x, y, BRUSH_RADIUS, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    updateProgressAt(x, y, BRUSH_RADIUS + 4);
+  };
+
+  const handleBack = () => {
+    if (phase === "reveal") {
+      setPhase("scratch");
+      setIsScratching(false);
+      setScratchProgress(0);
+      setIsRevealing(false);
+      setIsDrawing(false);
+      return;
+    }
+    goBack();
+  };
+
+  const onScratchStart = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    if (isRevealing) return;
+    const point = getCanvasPoint(event);
+    if (!point) return;
+    setIsDrawing(true);
+    setIsScratching(true);
+    lastPointRef.current = point;
+    eraseAt(point.x, point.y);
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+
+  const onScratchMove = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    if (!isDrawing || isRevealing) return;
+    const point = getCanvasPoint(event);
+    if (!point) return;
+    eraseAt(point.x, point.y, lastPointRef.current);
+    lastPointRef.current = point;
+  };
+
+  const onScratchEnd = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    setIsDrawing(false);
+    setIsScratching(false);
+    lastPointRef.current = null;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
   };
 
   return (
-    <div className="onb-screen onb-black onb-ref-screen">
+    <div className="onb-screen onb-black onb-offer-screen">
       <div className="onb-question-header">
-        <button className="onb-back-btn" onClick={goBack} aria-label="Retour">
+        <button className="onb-back-btn" onClick={handleBack} aria-label="Retour">
           {"\u2190"}
         </button>
         <div className="onb-header-spacer" />
         <div className="onb-header-spacer" />
       </div>
 
-      <div className="onb-ref-main">
-        <h2>Avez-vous un code de parrainage ?</h2>
-        <p>Vous pouvez passer cette étape.</p>
-        <input
-          className="onb-input"
-          placeholder="Code de parrainage"
-          value={code}
-          onChange={(e) => setCode(e.target.value)}
-        />
-      </div>
+      {phase === "scratch" ? (
+        <div className="onb-offer-main">
+          <div className="onb-offer-pill">OFFRE SOBRE</div>
+          <h2 className="onb-offer-title">
+            Gratte ton ticket
+            <br />
+            et découvre ton offre
+          </h2>
+          <p className="onb-offer-subtitle">Une réduction exclusive t’attend pour démarrer maintenant.</p>
 
-      <div className="onb-ref-bottom">
-        <button className="onb-skip" onClick={goNext}>
-          Passer
+          <button
+            className={`onb-offer-scratch ${isScratching ? "is-scratching" : ""} ${isRevealing ? "is-revealing" : ""}`}
+            aria-label="Gratter le ticket"
+            ref={scratchHostRef}
+          >
+            <span className="onb-offer-scratch-progress">{Math.floor(scratchProgress)}%</span>
+            <span className="onb-offer-scratch-text">Gratte ici</span>
+            <span className="onb-offer-scratch-shine" />
+            <canvas
+              ref={scratchCanvasRef}
+              className="onb-offer-scratch-canvas"
+              onPointerDown={onScratchStart}
+              onPointerMove={onScratchMove}
+              onPointerUp={onScratchEnd}
+              onPointerCancel={onScratchEnd}
+              onPointerLeave={onScratchEnd}
+            />
+          </button>
+        </div>
+      ) : (
+        <div className="onb-offer-main onb-offer-main-revealed">
+          <div className="onb-offer-pill">OFFRE REVELEE</div>
+          <h2 className="onb-offer-title">
+            Bravo, tu as
+            <br />
+            -50% de réduction
+          </h2>
+
+          <div className="onb-offer-card onb-offer-card-pop">
+            <div className="onb-offer-card-main">50%</div>
+            <div className="onb-offer-card-sub">OFF</div>
+            <div className="onb-offer-card-foot">OFFRE LIMITEE</div>
+            <div className="onb-offer-card-code">CODE_PROMO : {promoCode}</div>
+            <span className="onb-offer-spark onb-offer-spark-1" />
+            <span className="onb-offer-spark onb-offer-spark-2" />
+            <span className="onb-offer-spark onb-offer-spark-3" />
+          </div>
+        </div>
+      )}
+
+      {phase === "reveal" && (
+        <button className="onb-btn-gold onb-offer-btn" onClick={goNext}>
+          Récupérer ma réduction
         </button>
-        <button className="onb-btn-white" onClick={saveAndNext}>
-          Suivant
-        </button>
-      </div>
+      )}
     </div>
   );
 };
 
 const CustomPersonalizedSummary: React.FC<CustomProps> = ({ goNext, answers }) => {
-  const userName = answers.personalData?.firstName?.trim() || "Champion";
+  type RoadmapItem = {
+    icon: string;
+    title: string;
+    description: string;
+    highlight?: boolean;
+  };
+
+  const userName = answers.personalData?.firstName?.trim() || "";
   const targetDate = useMemo(() => {
     const d = new Date();
     d.setDate(d.getDate() + 90);
@@ -2253,19 +2464,19 @@ const CustomPersonalizedSummary: React.FC<CustomProps> = ({ goNext, answers }) =
     });
   }, []);
 
-  const roadmap = useMemo(() => [
+  const roadmap = useMemo<RoadmapItem[]>(() => [
     {
-      icon: "🗓️",
+      icon: "🛠️",
       title: "Jour 0 — Préparer ton espace",
       description: "Optimise ton environnement (physique & digital) pour rendre le changement plus simple.",
     },
     {
-      icon: "🧠",
+      icon: "🧭",
       title: "Jour 1 — Déjouer le sevrage",
       description: "Utilise des outils mentaux et physiques pour traverser les envies et te recentrer.",
     },
     {
-      icon: "🔥",
+      icon: "🔁",
       title: "Jour 2 — Battre le jeu des envies",
       description: "Repère tes déclencheurs et remplace-les par des habitudes plus saines et gratifiantes.",
     },
@@ -2277,17 +2488,17 @@ const CustomPersonalizedSummary: React.FC<CustomProps> = ({ goNext, answers }) =
       highlight: true,
     },
     {
-      icon: "🎯",
+      icon: "🔥",
       title: "Jour 3 — Renforcer ton “pourquoi”",
       description: "Transforme tes raisons profondes en motivation quotidienne et en focus.",
     },
     {
-      icon: "🛠️",
+      icon: "🧹",
       title: "Jour 4 — Écraser les symptômes",
       description: "Apprends à gérer la fatigue, le stress ou l'irritabilité avec des “resets” simples.",
     },
     {
-      icon: "🧠",
+      icon: "✨",
       title: "Ton focus revient vite.",
       description:
         "Le brouillard mental commence à se lever et la motivation revient. Sommeil, énergie et clarté sont juste au coin de la rue.",
@@ -2299,7 +2510,7 @@ const CustomPersonalizedSummary: React.FC<CustomProps> = ({ goNext, answers }) =
       description: "Bouge, mange mieux et recharge : ton énergie et ta clarté peuvent revenir rapidement.",
     },
     {
-      icon: "🌍",
+      icon: "🤝",
       title: "Jour 6 — Tu n'es pas seul",
       description: "Connecte-toi à d'autres sur le même chemin. Partage tes victoires et reçois du soutien.",
     },
@@ -2309,13 +2520,13 @@ const CustomPersonalizedSummary: React.FC<CustomProps> = ({ goNext, answers }) =
       description: "Remplace les anciennes habitudes par de vrais objectifs et des actions qui comptent.",
     },
     {
-      icon: "📊",
+      icon: "📈",
       title: "Fin de la semaine 1 — stats & élan",
       description:
         "Les envies sont encore là, mais plus faciles à gérer. Énergie, confiance et motivation se renforcent : c'est ton premier vrai goût de liberté.",
       highlight: true,
     },
-   ] as const, []);
+   ], []);
 
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const cardRefs = useRef<Array<HTMLElement | null>>([]);
@@ -2394,7 +2605,7 @@ const CustomPersonalizedSummary: React.FC<CustomProps> = ({ goNext, answers }) =
           animate={{ opacity: 1 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
         >
-          {userName}, voici ton plan personnalisé.
+          {userName ? `${userName}, voici ton plan personnalisé.` : "Voici ton plan personnalisé."}
         </motion.h2>
 
         <motion.div
@@ -2450,54 +2661,427 @@ const CustomPersonalizedSummary: React.FC<CustomProps> = ({ goNext, answers }) =
       >
         <div className="onb-summary-pill">✅ Sans engagement, annule quand tu veux</div>
         <button className="onb-btn-gold" onClick={goNext}>
-          Essayer pour 0€
+          Continuer
         </button>
       </motion.div>
     </div>
   );
 };
 
-const CustomTrialReminder: React.FC<CustomProps> = ({ goBack, goNext }) => {
+const CustomTrialReminder: React.FC<CustomProps> = ({ goBack, answers }) => {
+  const OFFER_TIMER_SECONDS_50 = 10 * 60;
+  const OFFER_TIMER_SECONDS_60 = 5 * 60;
   const [loading, setLoading] = useState(false);
+  const [secondsLeft, setSecondsLeft] = useState(OFFER_TIMER_SECONDS_50);
+  const [selectedPlan, setSelectedPlan] = useState<"month" | "year">("month");
+  const [showSpecialOffer, setShowSpecialOffer] = useState(false);
+  const [showExitOfferPrompt, setShowExitOfferPrompt] = useState(false);
+  const [checkoutEmail, setCheckoutEmail] = useState("");
+  const [checkoutEmailError, setCheckoutEmailError] = useState("");
+  const promoCode = useMemo(
+    () => buildPromoCode(answers.personalData?.firstName, showSpecialOffer ? "60" : "50"),
+    [answers.personalData?.firstName, showSpecialOffer],
+  );
+  const trialMainRef = useRef<HTMLDivElement | null>(null);
+  const pricingSectionRef = useRef<HTMLElement | null>(null);
+  const paymentMethodsRef = useRef<HTMLDivElement | null>(null);
+  const checkoutEmailInputRef = useRef<HTMLInputElement | null>(null);
 
-  const handleContinue = () => {
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setSecondsLeft((prev) => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    if (secondsLeft === 0 && !showSpecialOffer) {
+      setShowSpecialOffer(true);
+      setSecondsLeft(OFFER_TIMER_SECONDS_60);
+    }
+  }, [secondsLeft, showSpecialOffer]);
+
+  useEffect(() => {
+    if (showSpecialOffer) {
+      setShowExitOfferPrompt(false);
+    }
+  }, [showSpecialOffer]);
+
+  useEffect(() => {
+    const stepParam = new URLSearchParams(window.location.search).get("step");
+    if (stepParam !== "trial-reminder") return;
+
+    const target = pricingSectionRef.current;
+    if (!target) return;
+
+    const timer = window.setTimeout(() => {
+      target.scrollIntoView({ block: "start" });
+    }, 60);
+
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  const minutes = String(Math.floor(secondsLeft / 60)).padStart(2, "0");
+  const seconds = String(secondsLeft % 60).padStart(2, "0");
+
+  const offerLevel = showSpecialOffer ? "60" : "50";
+  const normalizedCheckoutEmail = checkoutEmail.trim().toLowerCase();
+  const isCheckoutEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedCheckoutEmail);
+  const prices = offerLevel === "50"
+    ? selectedPlan === "month"
+      ? { original: "24,99€", discounted: "12,99€ / mois", saved: "12,00€" }
+      : { original: "74,99€", discounted: "37,99€ / an", saved: "37,00€" }
+    : selectedPlan === "month"
+      ? { original: "24,99€", discounted: "9,99€ / mois", saved: "15,00€" }
+      : { original: "74,99€", discounted: "29,99€ / an", saved: "45,00€" };
+
+  const startCheckout = async () => {
     if (loading) return;
     setLoading(true);
-    window.setTimeout(() => goNext(), 900);
+
+    try {
+      const identity = readFunnelIdentityFromSearch(window.location.search);
+      const checkoutIdentityError = getCheckoutIdentityError(identity);
+      if (checkoutIdentityError) throw new Error(checkoutIdentityError);
+      if (!isCheckoutEmailValid) {
+        setCheckoutEmailError("Champ requis");
+        const emailInput = checkoutEmailInputRef.current;
+        if (emailInput) {
+          emailInput.scrollIntoView({ block: "center", behavior: "smooth" });
+          window.setTimeout(() => emailInput.focus(), 220);
+        }
+        setLoading(false);
+        return;
+      }
+      setCheckoutEmailError("");
+      const { userId, userIdTs, userIdSig } = identity;
+
+      const API = String(import.meta.env.VITE_API_BASE_URL || "http://localhost:4242").replace(/\/+$/, "");
+      const res = await fetch(`${API}/api/create-checkout-session`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: normalizedCheckoutEmail,
+          plan: selectedPlan,
+          offer: offerLevel,
+          userId,
+          userIdTs,
+          userIdSig,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data?.url) {
+        throw new Error(data?.error || "Erreur checkout");
+      }
+
+      window.location.href = data.url;
+    } catch (err) {
+      console.error("Checkout error:", err);
+      setLoading(false);
+      const message = err instanceof Error ? err.message : "Impossible de lancer le paiement pour le moment.";
+      alert(message);
+    }
+  };
+
+  const handleExitIntent = () => {
+    if (showSpecialOffer) {
+      goBack();
+      return;
+    }
+    setShowExitOfferPrompt(true);
+  };
+
+  const activateSpecialOffer = () => {
+    setShowSpecialOffer(true);
+    setSecondsLeft(OFFER_TIMER_SECONDS_60);
+    setShowExitOfferPrompt(false);
+  };
+
+  const scrollToPaymentMethods = () => {
+    const target = paymentMethodsRef.current;
+    if (!target) return;
+
+    const container = trialMainRef.current;
+    if (container && container.scrollHeight > container.clientHeight + 4) {
+      const containerRect = container.getBoundingClientRect();
+      const targetRect = target.getBoundingClientRect();
+      const destinationTop = Math.max(0, container.scrollTop + (targetRect.top - containerRect.top) - 10);
+      container.scrollTo({ top: destinationTop, behavior: "smooth" });
+      return;
+    }
+
+    const targetTop = window.scrollY + target.getBoundingClientRect().top - 10;
+    window.scrollTo({ top: targetTop, behavior: "smooth" });
   };
 
   return (
     <div className="onb-screen onb-black onb-trial-screen">
       <div className="onb-question-header">
-        <button className="onb-back-btn" onClick={goBack} aria-label="Retour">
-          {"\u2190"}
+        <div className="onb-header-spacer" />
+        <div className="onb-header-spacer" />
+        <button className="onb-back-btn onb-close-btn" onClick={handleExitIntent} aria-label="Fermer">
+          {"\u00d7"}
         </button>
-        <div className="onb-header-spacer" />
-        <div className="onb-header-spacer" />
       </div>
 
-      <div className="onb-trial-main">
-        <h2>
-          {"On t\u2019enverra un rappel"}
-          <br />
-          {"avant la fin de ton essai gratuit"}
-        </h2>
-        <div className="onb-trial-bell">
-          {"\uD83D\uDD14"} <span>1</span>
+      {showExitOfferPrompt && (
+        <div className="onb-exit-offer-overlay" role="dialog" aria-modal="true" aria-label="Offre spéciale 60%">
+          <div className="onb-exit-offer-card">
+            <div className="onb-exit-offer-badge">-60%</div>
+            <h3>Offre spéciale activée</h3>
+            <p>Tu allais quitter. On te débloque immédiatement la meilleure remise.</p>
+            <button className="onb-btn-gold onb-exit-offer-btn" onClick={activateSpecialOffer}>
+              Activer -60% maintenant
+            </button>
+          </div>
         </div>
-        <p>{"\u2713 Aucun paiement maintenant"}</p>
+      )}
+
+      <div className="onb-trial-main" ref={trialMainRef}>
+        {showSpecialOffer && (
+          <section className="onb-special-offer-head">
+            <p className="onb-special-prev">
+              Remise précédente: <s>50%</s>
+            </p>
+            <h2>Offre spéciale -60% activée</h2>
+            <p>Tu allais quitter. On te débloque la meilleure offre maintenant.</p>
+          </section>
+        )}
+
+        <section className="onb-paywall-timer-wrap">
+          <p className="onb-paywall-timer-kicker">Offre -{offerLevel}% expirera dans</p>
+          <div className="onb-paywall-timer-row">
+            <div className="onb-paywall-timer">
+              <span>{minutes}</span>:<span>{seconds}</span>
+            </div>
+            <button type="button" className="onb-paywall-timer-cta" onClick={scrollToPaymentMethods}>
+              Obtenir mon plan
+            </button>
+          </div>
+        </section>
+
+        <section className="onb-paywall-hero">
+          <div className="onb-paywall-hero-badge">Transformation claire</div>
+          <h2>{showSpecialOffer ? "Passe au plan SOBRE avec -60%" : "Ton plan SOBRE personnalisé"}</h2>
+          <p>Un système concret pour reprendre le contrôle jour après jour.</p>
+          <div className="onb-paywall-compare">
+            <article className="onb-paywall-compare-card is-before">
+              <span className="onb-paywall-compare-tag">Avant</span>
+              <h3>Sans SOBRE</h3>
+              <img
+                className="onb-paywall-compare-visual"
+                src="https://i.imgur.com/fBgv5QO.png"
+                alt="Avant: état actuel sans Sobre"
+                loading="lazy"
+              />
+              <ul>
+                <li>Motivation instable</li>
+                <li>Envies difficiles à gérer</li>
+                <li>Progrès irréguliers</li>
+              </ul>
+            </article>
+            <article className="onb-paywall-compare-card is-after">
+              <span className="onb-paywall-compare-tag">Après</span>
+              <h3>Avec SOBRE</h3>
+              <img
+                className="onb-paywall-compare-visual"
+                src="https://i.imgur.com/jf9Uaiz.png"
+                alt="Après: progression avec Sobre"
+                loading="lazy"
+              />
+              <ul>
+                <li>Routines solides</li>
+                <li>Plan simple à suivre</li>
+                <li>Progression claire et mesurable</li>
+              </ul>
+            </article>
+          </div>
+        </section>
+
+        <section className="onb-paywall-list">
+          <h3>Comment atteindre ton objectif avec SOBRE</h3>
+          <p>🛑 Active le blocage des apps et contenus déclencheurs</p>
+          <p>🚨 Utilise les outils d’urgence quand une envie apparaît</p>
+          <p>👥 Avance avec la communauté SOBRE</p>
+          <p>🧠 Suis la méthode basée sur les neurosciences</p>
+          <p>📈 Suis ta progression jour après jour</p>
+          <p>🎯 Complète le programme Detox 30-60-90</p>
+        </section>
+
+        <section className="onb-paywall-proof">
+          <h3>Ils avancent avec SOBRE</h3>
+          <div className="onb-paywall-reviews">
+            <blockquote>
+              <div className="onb-review-stars">★★★★★</div>
+              <p className="onb-review-quote">"En 10 jours j’ai retrouvé de la clarté."</p>
+              <div className="onb-review-meta">— Lucas · 10 jours</div>
+            </blockquote>
+            <blockquote>
+              <div className="onb-review-stars">★★★★★</div>
+              <p className="onb-review-quote">"Le suivi quotidien m’aide vraiment à tenir."</p>
+              <div className="onb-review-meta">— Thomas · 3 semaines</div>
+            </blockquote>
+            <blockquote>
+              <div className="onb-review-stars">★★★★★</div>
+              <p className="onb-review-quote">"Simple, concret, efficace."</p>
+              <div className="onb-review-meta">— Marc · 4 mois</div>
+            </blockquote>
+          </div>
+        </section>
+
+        <section className="onb-paywall-pricing" ref={pricingSectionRef}>
+          <h3>Choisis ton plan</h3>
+          <div className="onb-pricing-promo">
+            <div className="onb-pricing-promo-head">✅ Code promo appliqué</div>
+            <div className="onb-pricing-promo-row">
+              <span className="onb-pricing-promo-code">{promoCode}</span>
+              <span className="onb-pricing-promo-timer">{minutes}:{seconds}</span>
+            </div>
+          </div>
+
+          <article
+            className={`onb-paywall-plan ${selectedPlan === "month" ? "is-selected" : ""}`}
+            onClick={() => setSelectedPlan("month")}
+          >
+            <div>
+              <strong>Plan Mensuel</strong>
+              <p>
+                <s>24,99€</s> <span>-${offerLevel}%</span>
+              </p>
+            </div>
+            <div className="onb-paywall-price">{offerLevel === "50" ? "12,99€ / mois" : "9,99€ / mois"}</div>
+          </article>
+
+          <article
+            className={`onb-paywall-plan ${selectedPlan === "year" ? "is-selected" : ""}`}
+            onClick={() => setSelectedPlan("year")}
+          >
+            <div>
+              <strong>Plan Annuel</strong>
+              <p>
+                <s>74,99€</s> <span>-${offerLevel}%</span>
+              </p>
+            </div>
+            <div className="onb-paywall-price">{offerLevel === "50" ? "37,99€ / an" : "29,99€ / an"}</div>
+          </article>
+
+        </section>
+
+        <section className="onb-checkout-block">
+          <h3>
+            Rejoins plus de <span>5000 utilisateurs</span>
+            <br />
+            qui reprennent le contrôle avec SOBRE
+          </h3>
+
+          <div className="onb-checkout-card">
+            <h4>Paiement sécurisé</h4>
+
+            <div className="onb-checkout-email">
+              <label htmlFor="checkout-email">Email de connexion</label>
+              <input
+                id="checkout-email"
+                ref={checkoutEmailInputRef}
+                type="email"
+                inputMode="email"
+                autoComplete="email"
+                placeholder="ton@email.com"
+                value={checkoutEmail}
+                onChange={(e) => {
+                  setCheckoutEmail(e.target.value);
+                  if (checkoutEmailError) setCheckoutEmailError("");
+                }}
+              />
+              {checkoutEmailError ? <p className="onb-checkout-email-error">{checkoutEmailError}</p> : null}
+            </div>
+
+            <div className="onb-checkout-row">
+              <span>SOBRE Premium</span>
+              <strong>{prices.original}</strong>
+            </div>
+            <div className="onb-checkout-row is-discount">
+              <span>Offre d’introduction -{offerLevel}%</span>
+              <strong>-{prices.saved}</strong>
+            </div>
+            <div className="onb-checkout-code">CODE_PROMO : {promoCode}</div>
+
+            <div className="onb-checkout-total">
+              <span>Total</span>
+              <strong>{prices.discounted}</strong>
+            </div>
+            
+            <div className="onb-payment-methods" ref={paymentMethodsRef}>
+              <button className="onb-checkout-apple" onClick={startCheckout} disabled={loading}>
+                <span className="onb-apple-pay-content">
+                  <svg
+                    className="onb-apple-pay-icon"
+                    viewBox="0 0 16 16"
+                    aria-hidden="true"
+                  >
+                    <path
+                      fill="currentColor"
+                      d="M11.182.008c-2.345-.14-4.54 1.262-5.706 2.667-1.169 1.413-2.153 3.508-1.79 5.554 2.606.2 5.287-1.458 6.658-3.085C11.714 3.612 12.701 1.526 11.182.008zM13.682 5.226c-1.31-.078-2.422.744-3.048.744-.627 0-1.59-.705-2.625-.685-1.35.02-2.598.784-3.29 1.996-1.408 2.453-.36 6.084 1.01 8.063.67.968 1.47 2.055 2.515 2.016 1.005-.04 1.385-.652 2.602-.652 1.217 0 1.56.652 2.623.63 1.086-.02 1.773-.987 2.44-1.958.77-1.12 1.086-2.204 1.104-2.26-.024-.008-2.12-.814-2.142-3.243-.02-2.032 1.66-3.003 1.736-3.048-.95-1.386-2.425-1.54-2.925-1.603z"
+                    />
+                  </svg>
+                  <span>Pay</span>
+                </span>
+              </button>
+
+              <button className="onb-checkout-confirm" onClick={startCheckout} disabled={loading}>
+                🔒 Activer l’abonnement
+              </button>
+            </div>
+
+          </div>
+
+          <div className="onb-checkout-meta">
+            <p className="onb-checkout-disclaimer">
+              En cliquant sur “Activer l’abonnement”, tu acceptes le renouvellement automatique. Annulation à tout
+              moment depuis les réglages de ton compte.
+            </p>
+            <div className="onb-checkout-trust">✅ Paiement sûr et sécurisé</div>
+            <div className="onb-checkout-brands" aria-label="Moyens de paiement pris en charge">
+              <span>Apple Pay</span>
+              <span>VISA</span>
+              <span>Mastercard</span>
+              <span>AMEX</span>
+            </div>
+          </div>
+        </section>
       </div>
 
-      <button className="onb-btn-gold onb-trial-btn" onClick={handleContinue}>
-        {loading ? "Chargement..." : "Continuer gratuitement"}
-      </button>
+      <div className="onb-paywall-cta-wrap">
+        <button className="onb-btn-gold onb-trial-btn" onClick={startCheckout} disabled={loading}>
+          {loading ? "Chargement..." : showSpecialOffer ? "Activer -60% maintenant" : "Commencer maintenant"}
+        </button>
+        <p className="onb-paywall-legal">Annulation à tout moment</p>
+      </div>
     </div>
   );
 };
 export default function OnboardingFirst5({ onDone, onLoginClick }: Props) {
-  const [stepIndex, setStepIndex] = useState(0);
+  const [stepIndex, setStepIndex] = useState(() => {
+    const stepParam = new URLSearchParams(window.location.search).get("step");
+    if (!stepParam || stepParam === "trial-reminder") {
+      const trialReminderIndex = STEP_ORDER.indexOf("trial-reminder");
+      return trialReminderIndex >= 0 ? trialReminderIndex : 0;
+    }
+    const requestedStepIndex = STEP_ORDER.indexOf(stepParam as StepId);
+    return requestedStepIndex >= 0 ? requestedStepIndex : 0;
+  });
   const [direction, setDirection] = useState<1 | -1>(1);
   const [answers, setAnswers] = useState<Answers>({ quizAnswers: {} });
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("step")) return;
+
+    params.set("step", "trial-reminder");
+    const nextSearch = params.toString();
+    const nextUrl = `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ""}${window.location.hash}`;
+    window.history.replaceState({}, "", nextUrl);
+  }, []);
 
   const step = STEP_ORDER[stepIndex];
   const activePageVariants = CINEMATIC_SLIDE_STEPS.includes(step)
@@ -2593,12 +3177,5 @@ export default function OnboardingFirst5({ onDone, onLoginClick }: Props) {
     </div>
   );
 }
-
-
-
-
-
-
-
 
 
