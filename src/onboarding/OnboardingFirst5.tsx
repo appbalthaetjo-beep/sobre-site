@@ -1,6 +1,7 @@
 ﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion, type Variants } from "framer-motion";
 import "./onboarding-first5.css";
+import { getApiBaseUrl } from "../lib/apiBaseUrl";
 import { getCheckoutIdentityError, readFunnelIdentityFromSearch } from "../lib/funnelIdentity";
 type StepId =
   | "index"
@@ -2756,8 +2757,8 @@ const CustomTrialReminder: React.FC<CustomProps> = ({ goBack, answers }) => {
       setCheckoutEmailError("");
       const { userId, userIdTs, userIdSig } = identity;
 
-      const API = String(import.meta.env.VITE_API_BASE_URL || "http://localhost:4242").replace(/\/+$/, "");
-      const res = await fetch(`${API}/api/create-checkout-session`, {
+      const API_BASE_URL = getApiBaseUrl();
+      const res = await fetch(`${API_BASE_URL}/api/create-checkout-session`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
