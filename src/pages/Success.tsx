@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { getApiBaseUrl } from "../lib/apiBaseUrl";
 import { buildTrialReminderUrl } from "../lib/funnelIdentity";
 
 const APP_STORE_URL =
@@ -36,8 +37,8 @@ export default function Success() {
       }
 
       try {
-        const API = String(import.meta.env.VITE_API_BASE_URL || "http://localhost:4242").replace(/\/+$/, "");
-        const res = await fetch(`${API}/api/stripe/session?session_id=${encodeURIComponent(sessionId)}`);
+        const API_BASE_URL = getApiBaseUrl();
+        const res = await fetch(`${API_BASE_URL}/api/stripe/session?session_id=${encodeURIComponent(sessionId)}`);
         const data = (await res.json().catch(() => ({}))) as SessionPayload;
         if (cancelled) return;
 
