@@ -2763,88 +2763,6 @@
   padding: 8px 10px calc(232px + env(safe-area-inset-bottom));
 }
 
-.onb-close-btn {
-  font-size: 24px;
-  line-height: 1;
-}
-
-.onb-exit-offer-overlay {
-  position: absolute;
-  inset: 0;
-  z-index: 30;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  padding: 84px 16px 16px;
-  background: rgba(0, 0, 0, 0.72);
-  backdrop-filter: blur(3px);
-}
-
-.onb-exit-offer-card {
-  width: min(100%, 420px);
-  border-radius: 18px;
-  border: 1px solid rgba(186, 199, 255, 0.4);
-  background:
-    radial-gradient(120% 130% at 50% 0%, rgba(124, 146, 255, 0.3), rgba(81, 98, 213, 0.12) 58%, transparent 76%),
-    linear-gradient(170deg, rgba(74, 99, 231, 0.18), rgba(63, 48, 178, 0.2)),
-    #0b0b0c;
-  padding: 24px 18px 18px;
-  text-align: center;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.3),
-    inset 0 -12px 24px rgba(54, 42, 168, 0.28),
-    0 16px 34px rgba(24, 28, 92, 0.5);
-}
-
-.onb-exit-offer-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 112px;
-  height: 44px;
-  padding: 0 18px;
-  border-radius: 999px;
-  border: 1px solid rgba(196, 209, 255, 0.5);
-  background:
-    linear-gradient(160deg, rgba(139, 160, 255, 0.38), rgba(91, 114, 241, 0.3) 55%, rgba(82, 65, 206, 0.34)),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.04));
-  color: #f6f8ff;
-  font-size: 28px;
-  font-weight: 800;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.42),
-    0 10px 22px rgba(48, 58, 176, 0.42);
-}
-
-.onb-exit-offer-card h3 {
-  margin: 16px 0 10px;
-  color: #dde5ff;
-  font-size: 38px;
-  line-height: 1.04;
-  text-shadow: 0 2px 14px rgba(108, 133, 255, 0.35);
-}
-
-.onb-exit-offer-card p {
-  margin: 0;
-  color: rgba(255, 255, 255, 0.84);
-  font-size: 17px;
-  line-height: 1.35;
-}
-
-.onb-exit-offer-btn {
-  margin-top: 18px;
-  width: 100%;
-  border: 1px solid rgba(205, 216, 255, 0.52);
-  background:
-    linear-gradient(160deg, rgba(141, 164, 255, 0.42), rgba(95, 119, 244, 0.34) 56%, rgba(88, 70, 218, 0.4)),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.04));
-  color: #f7f9ff;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.45),
-    inset 0 -10px 20px rgba(54, 41, 166, 0.34),
-    0 12px 24px rgba(45, 56, 175, 0.46);
-}
-
 .onb-paywall-timer-wrap {
   text-align: center;
   position: relative;
@@ -3394,7 +3312,6 @@
   font-size: 14px;
 }
 
-.onb-checkout-apple,
 .onb-checkout-confirm {
   width: 100%;
   border: 0;
@@ -3419,25 +3336,6 @@
 .onb-trial-btn:disabled {
   opacity: 0.65;
   cursor: not-allowed;
-}
-
-.onb-checkout-apple {
-  margin-top: 8px;
-  background: #000;
-  color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-}
-
-.onb-apple-pay-content {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.onb-apple-pay-icon {
-  width: 16px;
-  height: 16px;
-  display: block;
 }
 
 .onb-checkout-fields {
@@ -3537,46 +3435,6 @@
   line-height: 1.35;
 }
 
-.onb-special-offer-head {
-  border: 1px solid rgba(184, 199, 255, 0.38);
-  border-radius: 16px;
-  background:
-    radial-gradient(120% 120% at 50% 0%, rgba(120, 145, 255, 0.24), rgba(78, 98, 218, 0.1) 58%, transparent 80%),
-    linear-gradient(170deg, rgba(73, 99, 232, 0.16), rgba(61, 47, 177, 0.2));
-  padding: 12px;
-  text-align: center;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.3),
-    inset 0 -10px 20px rgba(50, 37, 154, 0.28),
-    0 10px 24px rgba(32, 39, 124, 0.34);
-}
-
-.onb-special-prev {
-  margin: 0 0 8px;
-  color: rgba(228, 236, 255, 0.8);
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.onb-special-prev s {
-  color: rgba(228, 236, 255, 0.58);
-}
-
-.onb-special-offer-head h2 {
-  margin: 0 0 8px;
-  color: #e8eeff;
-  font-size: 33px;
-  line-height: 1.08;
-  text-shadow: 0 2px 14px rgba(109, 133, 255, 0.35);
-}
-
-.onb-special-offer-head p {
-  margin: 0;
-  color: rgba(232, 238, 255, 0.86);
-  font-size: 14px;
-  line-height: 1.35;
-}
-
 @media (max-width: 420px) {
   .onb-paywall-hero h2 {
     font-size: 24px;
@@ -3619,7 +3477,4 @@
     font-size: 22px;
   }
 
-  .onb-special-offer-head h2 {
-    font-size: 29px;
-  }
 }

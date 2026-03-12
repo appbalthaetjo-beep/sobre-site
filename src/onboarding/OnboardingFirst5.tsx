@@ -2671,18 +2671,12 @@ const CustomPersonalizedSummary: React.FC<CustomProps> = ({ goNext, answers }) =
 
 const CustomTrialReminder: React.FC<CustomProps> = ({ goBack, answers }) => {
   const OFFER_TIMER_SECONDS_50 = 10 * 60;
-  const OFFER_TIMER_SECONDS_60 = 5 * 60;
   const [loading, setLoading] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(OFFER_TIMER_SECONDS_50);
   const [selectedPlan, setSelectedPlan] = useState<"month" | "year">("month");
-  const [showSpecialOffer, setShowSpecialOffer] = useState(false);
-  const [showExitOfferPrompt, setShowExitOfferPrompt] = useState(false);
   const [checkoutEmail, setCheckoutEmail] = useState("");
   const [checkoutEmailError, setCheckoutEmailError] = useState("");
-  const promoCode = useMemo(
-    () => buildPromoCode(answers.personalData?.firstName, showSpecialOffer ? "60" : "50"),
-    [answers.personalData?.firstName, showSpecialOffer],
-  );
+  const promoCode = useMemo(() => buildPromoCode(answers.personalData?.firstName, "50"), [answers.personalData?.firstName]);
   const trialMainRef = useRef<HTMLDivElement | null>(null);
   const pricingSectionRef = useRef<HTMLElement | null>(null);
   const paymentMethodsRef = useRef<HTMLDivElement | null>(null);
@@ -2694,19 +2688,6 @@ const CustomTrialReminder: React.FC<CustomProps> = ({ goBack, answers }) => {
     }, 1000);
     return () => window.clearInterval(timer);
   }, []);
-
-  useEffect(() => {
-    if (secondsLeft === 0 && !showSpecialOffer) {
-      setShowSpecialOffer(true);
-      setSecondsLeft(OFFER_TIMER_SECONDS_60);
-    }
-  }, [secondsLeft, showSpecialOffer]);
-
-  useEffect(() => {
-    if (showSpecialOffer) {
-      setShowExitOfferPrompt(false);
-    }
-  }, [showSpecialOffer]);
 
   useEffect(() => {
     const stepParam = new URLSearchParams(window.location.search).get("step");
@@ -2725,16 +2706,13 @@ const CustomTrialReminder: React.FC<CustomProps> = ({ goBack, answers }) => {
   const minutes = String(Math.floor(secondsLeft / 60)).padStart(2, "0");
   const seconds = String(secondsLeft % 60).padStart(2, "0");
 
-  const offerLevel = showSpecialOffer ? "60" : "50";
+  const offerLevel = "50";
   const normalizedCheckoutEmail = checkoutEmail.trim().toLowerCase();
   const isCheckoutEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedCheckoutEmail);
-  const prices = offerLevel === "50"
-    ? selectedPlan === "month"
-      ? { original: "24,99€", discounted: "12,99€ / mois", saved: "12,00€" }
-      : { original: "74,99€", discounted: "37,99€ / an", saved: "37,00€" }
-    : selectedPlan === "month"
-      ? { original: "24,99€", discounted: "9,99€ / mois", saved: "15,00€" }
-      : { original: "74,99€", discounted: "29,99€ / an", saved: "45,00€" };
+  const prices =
+    selectedPlan === "month"
+      ? { original: "19,99€", discounted: "9,99€ / mois", saved: "10,00€" }
+      : { original: "59,99€", discounted: "29,99€ / an", saved: "30,00€" };
 
   const startCheckout = async () => {
     if (loading) return;
@@ -2785,20 +2763,6 @@ const CustomTrialReminder: React.FC<CustomProps> = ({ goBack, answers }) => {
     }
   };
 
-  const handleExitIntent = () => {
-    if (showSpecialOffer) {
-      goBack();
-      return;
-    }
-    setShowExitOfferPrompt(true);
-  };
-
-  const activateSpecialOffer = () => {
-    setShowSpecialOffer(true);
-    setSecondsLeft(OFFER_TIMER_SECONDS_60);
-    setShowExitOfferPrompt(false);
-  };
-
   const scrollToPaymentMethods = () => {
     const target = paymentMethodsRef.current;
     if (!target) return;
@@ -2821,35 +2785,10 @@ const CustomTrialReminder: React.FC<CustomProps> = ({ goBack, answers }) => {
       <div className="onb-question-header">
         <div className="onb-header-spacer" />
         <div className="onb-header-spacer" />
-        <button className="onb-back-btn onb-close-btn" onClick={handleExitIntent} aria-label="Fermer">
-          {"\u00d7"}
-        </button>
+        <div className="onb-header-spacer" />
       </div>
 
-      {showExitOfferPrompt && (
-        <div className="onb-exit-offer-overlay" role="dialog" aria-modal="true" aria-label="Offre spéciale 60%">
-          <div className="onb-exit-offer-card">
-            <div className="onb-exit-offer-badge">-60%</div>
-            <h3>Offre spéciale activée</h3>
-            <p>Tu allais quitter. On te débloque immédiatement la meilleure remise.</p>
-            <button className="onb-btn-gold onb-exit-offer-btn" onClick={activateSpecialOffer}>
-              Activer -60% maintenant
-            </button>
-          </div>
-        </div>
-      )}
-
       <div className="onb-trial-main" ref={trialMainRef}>
-        {showSpecialOffer && (
-          <section className="onb-special-offer-head">
-            <p className="onb-special-prev">
-              Remise précédente: <s>50%</s>
-            </p>
-            <h2>Offre spéciale -60% activée</h2>
-            <p>Tu allais quitter. On te débloque la meilleure offre maintenant.</p>
-          </section>
-        )}
-
         <section className="onb-paywall-timer-wrap">
           <p className="onb-paywall-timer-kicker">Offre -{offerLevel}% expirera dans</p>
           <div className="onb-paywall-timer-row">
@@ -2864,7 +2803,7 @@ const CustomTrialReminder: React.FC<CustomProps> = ({ goBack, answers }) => {
 
         <section className="onb-paywall-hero">
           <div className="onb-paywall-hero-badge">Transformation claire</div>
-          <h2>{showSpecialOffer ? "Passe au plan SOBRE avec -60%" : "Ton plan SOBRE personnalisé"}</h2>
+          <h2>Ton plan SOBRE personnalisé</h2>
           <p>Un système concret pour reprendre le contrôle jour après jour.</p>
           <div className="onb-paywall-compare">
             <article className="onb-paywall-compare-card is-before">
@@ -2948,10 +2887,10 @@ const CustomTrialReminder: React.FC<CustomProps> = ({ goBack, answers }) => {
             <div>
               <strong>Plan Mensuel</strong>
               <p>
-                <s>24,99€</s> <span>-${offerLevel}%</span>
+                <s>19,99€</s> <span>-${offerLevel}%</span>
               </p>
             </div>
-            <div className="onb-paywall-price">{offerLevel === "50" ? "12,99€ / mois" : "9,99€ / mois"}</div>
+            <div className="onb-paywall-price">9,99€ / mois</div>
           </article>
 
           <article
@@ -2961,10 +2900,10 @@ const CustomTrialReminder: React.FC<CustomProps> = ({ goBack, answers }) => {
             <div>
               <strong>Plan Annuel</strong>
               <p>
-                <s>74,99€</s> <span>-${offerLevel}%</span>
+                <s>59,99€</s> <span>-${offerLevel}%</span>
               </p>
             </div>
-            <div className="onb-paywall-price">{offerLevel === "50" ? "37,99€ / an" : "29,99€ / an"}</div>
+            <div className="onb-paywall-price">29,99€ / an</div>
           </article>
 
         </section>
@@ -3013,24 +2952,8 @@ const CustomTrialReminder: React.FC<CustomProps> = ({ goBack, answers }) => {
             </div>
             
             <div className="onb-payment-methods" ref={paymentMethodsRef}>
-              <button className="onb-checkout-apple" onClick={startCheckout} disabled={loading}>
-                <span className="onb-apple-pay-content">
-                  <svg
-                    className="onb-apple-pay-icon"
-                    viewBox="0 0 16 16"
-                    aria-hidden="true"
-                  >
-                    <path
-                      fill="currentColor"
-                      d="M11.182.008c-2.345-.14-4.54 1.262-5.706 2.667-1.169 1.413-2.153 3.508-1.79 5.554 2.606.2 5.287-1.458 6.658-3.085C11.714 3.612 12.701 1.526 11.182.008zM13.682 5.226c-1.31-.078-2.422.744-3.048.744-.627 0-1.59-.705-2.625-.685-1.35.02-2.598.784-3.29 1.996-1.408 2.453-.36 6.084 1.01 8.063.67.968 1.47 2.055 2.515 2.016 1.005-.04 1.385-.652 2.602-.652 1.217 0 1.56.652 2.623.63 1.086-.02 1.773-.987 2.44-1.958.77-1.12 1.086-2.204 1.104-2.26-.024-.008-2.12-.814-2.142-3.243-.02-2.032 1.66-3.003 1.736-3.048-.95-1.386-2.425-1.54-2.925-1.603z"
-                    />
-                  </svg>
-                  <span>Pay</span>
-                </span>
-              </button>
-
               <button className="onb-checkout-confirm" onClick={startCheckout} disabled={loading}>
-                🔒 Activer l’abonnement
+                Commencer ma transformation
               </button>
             </div>
 
@@ -3054,7 +2977,7 @@ const CustomTrialReminder: React.FC<CustomProps> = ({ goBack, answers }) => {
 
       <div className="onb-paywall-cta-wrap">
         <button className="onb-btn-gold onb-trial-btn" onClick={startCheckout} disabled={loading}>
-          {loading ? "Chargement..." : showSpecialOffer ? "Activer -60% maintenant" : "Commencer maintenant"}
+          {loading ? "Chargement..." : "Commencer maintenant"}
         </button>
         <p className="onb-paywall-legal">Annulation à tout moment</p>
       </div>
