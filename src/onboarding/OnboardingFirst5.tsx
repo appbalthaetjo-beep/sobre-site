@@ -3,6 +3,7 @@ import { AnimatePresence, motion, type Variants } from "framer-motion";
 import "./onboarding-first5.css";
 import { getApiBaseUrl } from "../lib/apiBaseUrl";
 import { getCheckoutIdentityError, readFunnelIdentityFromSearch } from "../lib/funnelIdentity";
+import { savePendingPurchase, trackMetaEvent, trackMetaEventOnce } from "../lib/metaPixel";
 type StepId =
   | "index"
   | "story"
@@ -2703,6 +2704,14 @@ const CustomTrialReminder: React.FC<CustomProps> = ({ goBack, answers }) => {
     return () => window.clearTimeout(timer);
   }, []);
 
+  useEffect(() => {
+    trackMetaEventOnce("ViewContent:paywall-trial-reminder-50", "ViewContent", {
+      content_name: "Sobre Paywall -50%",
+      content_type: "product_group",
+      currency: "EUR",
+    });
+  }, []);
+
   const minutes = String(Math.floor(secondsLeft / 60)).padStart(2, "0");
   const seconds = String(secondsLeft % 60).padStart(2, "0");
 
@@ -2734,6 +2743,13 @@ const CustomTrialReminder: React.FC<CustomProps> = ({ goBack, answers }) => {
       }
       setCheckoutEmailError("");
       const { userId, userIdTs, userIdSig } = identity;
+      const purchaseValue = selectedPlan === "month" ? 9.99 : 29.99;
+
+      savePendingPurchase({ value: purchaseValue, currency: "EUR" });
+      trackMetaEvent("InitiateCheckout", {
+        currency: "EUR",
+        value: purchaseValue,
+      });
 
       const API_BASE_URL = getApiBaseUrl();
       const res = await fetch(`${API_BASE_URL}/api/create-checkout-session`, {

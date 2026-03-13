@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { getApiBaseUrl } from "../lib/apiBaseUrl";
 import { buildTrialReminderUrl } from "../lib/funnelIdentity";
+import { clearPendingPurchase, readPendingPurchase, trackMetaEventOnce } from "../lib/metaPixel";
 
 const APP_STORE_URL =
   "https://apps.apple.com/fr/app/sobre-arr%C3%AAte-le-porno/id6751785162?l=en-GB";
@@ -49,6 +50,12 @@ export default function Success() {
         }
 
         if (data.is_validated) {
+          const pendingPurchase = readPendingPurchase();
+          trackMetaEventOnce(`Purchase:${sessionId}`, "Purchase", {
+            currency: "EUR",
+            value: pendingPurchase?.value ?? 0,
+          });
+          clearPendingPurchase();
           setState("success");
           setMessage("Paiement confirme. Ton abonnement est actif.");
           setCustomerEmail(String(data.customer_email || "").trim());
