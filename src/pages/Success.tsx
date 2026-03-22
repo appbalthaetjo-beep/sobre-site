@@ -1,7 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
+import { usePostHog } from "@posthog/react";
 import { getApiBaseUrl } from "../lib/apiBaseUrl";
 import { buildTrialReminderUrl } from "../lib/funnelIdentity";
 import { clearPendingPurchase, readPendingPurchase, trackMetaEventOnce } from "../lib/metaPixel";
+import { capturePostHogEventOnce, clearPendingCheckout, readPendingCheckout } from "../lib/posthog";
+
+const FLOW_VERSION = "email_step_v1";
+const withFlowVersion = (properties?: Record<string, string | number | boolean | null | undefined>) => ({
+  ...(properties ?? {}),
+  flow_version: FLOW_VERSION,
+});
 
 const APP_STORE_URL =
   "https://apps.apple.com/fr/app/sobre-arr%C3%AAte-le-porno/id6751785162?l=en-GB";
@@ -18,6 +26,7 @@ type SessionPayload = {
 };
 
 export default function Success() {
+  const posthog = usePostHog();
   const [state, setState] = useState<CheckState>("loading");
   const [message, setMessage] = useState("Verification du paiement en cours...");
   const [customerEmail, setCustomerEmail] = useState("");
@@ -51,11 +60,24 @@ export default function Success() {
 
         if (data.is_validated) {
           const pendingPurchase = readPendingPurchase();
+          const pendingCheckout = readPendingCheckout();
           trackMetaEventOnce(`Purchase:${sessionId}`, "Purchase", {
             currency: "EUR",
             value: pendingPurchase?.value ?? 0,
           });
           clearPendingPurchase();
+          capturePostHogEventOnce(
+            posthog,
+            `purchase_completed:${sessionId}`,
+            "purchase_completed",
+            withFlowVersion({
+              currency: pendingCheckout?.currency ?? "EUR",
+              offer_name: pendingCheckout?.offerName ?? "intro_50",
+              plan_type: pendingCheckout?.planType,
+              price: pendingCheckout?.price ?? 0,
+            })
+          );
+          clearPendingCheckout();
           setState("success");
           setMessage("Paiement confirme. Ton abonnement est actif.");
           setCustomerEmail(String(data.customer_email || "").trim());
@@ -75,7 +97,18 @@ export default function Success() {
     return () => {
       cancelled = true;
     };
-  }, [sessionId]);
+  }, [posthog, sessionId]);
+
+  useEffect(() => {
+    capturePostHogEventOnce(
+      posthog,
+      `success_viewed:${sessionId || "unknown"}`,
+      "success_viewed",
+      withFlowVersion({
+        session_id: sessionId || null,
+      })
+    );
+  }, [posthog, sessionId]);
 
   const kicker =
     state === "success"

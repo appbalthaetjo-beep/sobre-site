@@ -1,5 +1,6 @@
 import { StrictMode, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
+import { PostHogProvider } from '@posthog/react';
 import App from './App.tsx';
 import OnboardingFirst5 from './onboarding/OnboardingFirst5.tsx';
 import { OnboardingPage } from './onboarding/OnboardingPage.tsx';
@@ -7,6 +8,7 @@ import Success from './pages/Success.tsx';
 import Pricing from './pages/Pricing.tsx';
 import { TRIAL_REMINDER_PATH } from './lib/funnelIdentity';
 import { trackMetaPageView } from './lib/metaPixel';
+import { getPostHogConfig, markPostHogReady } from './lib/posthog';
 import './index.css';
 
 const LOCATION_CHANGE_EVENT = 'sobre:locationchange';
@@ -125,8 +127,29 @@ function AppShell() {
   return <RootComponent />;
 }
 
-createRoot(document.getElementById('root')!).render(
+const posthogConfig = getPostHogConfig();
+const app = (
   <StrictMode>
     <AppShell />
   </StrictMode>
+);
+
+createRoot(document.getElementById('root')!).render(
+  posthogConfig.key && posthogConfig.host ? (
+    <StrictMode>
+      <PostHogProvider
+        apiKey={posthogConfig.key}
+        options={{
+          api_host: posthogConfig.host,
+          autocapture: true,
+          capture_pageview: 'history_change',
+          loaded: () => markPostHogReady(),
+        }}
+      >
+        <AppShell />
+      </PostHogProvider>
+    </StrictMode>
+  ) : (
+    app
+  )
 );

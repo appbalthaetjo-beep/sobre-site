@@ -1,9 +1,11 @@
 ﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion, type Variants } from "framer-motion";
+import { usePostHog } from "@posthog/react";
 import "./onboarding-first5.css";
 import { getApiBaseUrl } from "../lib/apiBaseUrl";
 import { getCheckoutIdentityError, readFunnelIdentityFromSearch } from "../lib/funnelIdentity";
 import { savePendingPurchase, trackMetaEvent, trackMetaEventOnce } from "../lib/metaPixel";
+import { capturePostHogEvent, capturePostHogEventOnce, savePendingCheckout } from "../lib/posthog";
 type StepId =
   | "index"
   | "story"
@@ -42,6 +44,7 @@ type StepId =
   | "commitment-signature"
   | "rate-us"
   | "free-trial"
+  | "email-capture"
   | "personalized-summary"
   | "trial-reminder";
 
@@ -52,6 +55,22 @@ type Answers = {
   userGoals?: string[];
   referralCode?: string;
 };
+
+type CheckoutPlan = "month" | "year";
+
+type PreparedCheckout = {
+  key: string;
+  url: string;
+  email: string;
+  plan: CheckoutPlan;
+  offer: string;
+};
+
+const FLOW_VERSION = "email_step_v1";
+const withFlowVersion = (properties?: Record<string, string | number | boolean | null | undefined>) => ({
+  ...(properties ?? {}),
+  flow_version: FLOW_VERSION,
+});
 
 export type CustomProps = {
   step: StepId;
@@ -104,9 +123,65 @@ const STEP_ORDER: StepId[] = [
   "commitment-signature",
   "rate-us",
   "personalized-summary",
+  "email-capture",
   "free-trial",
   "trial-reminder",
 ];
+
+const INTRO_STEPS = new Set<StepId>([
+  "index",
+  "story",
+  "personal-data",
+  "consider-this",
+  "youre-in-the-right-place",
+]);
+const QUIZ_STEPS = new Set<StepId>([
+  "question-1",
+  "question-2",
+  "question-3",
+  "question-4",
+  "question-5",
+  "question-6",
+  "question-8",
+  "question-9",
+  "question-10",
+  "question-11",
+  "question-12",
+  "question-13",
+]);
+const SLIDE_STEPS = new Set<StepId>([
+  "slide-1",
+  "slide-2",
+  "slide-3",
+  "slide-4",
+  "slide-6",
+  "slide-7",
+  "slide-8",
+  "slide-9",
+  "slide-10",
+  "slide-11",
+]);
+const PROOF_STEPS = new Set<StepId>([
+  "testimonials",
+  "past-attempts",
+  "rewiring-advantages",
+  "personal-goals",
+  "commitment-signature",
+  "rate-us",
+]);
+
+function getStepGroup(step: StepId) {
+  if (INTRO_STEPS.has(step)) return "intro";
+  if (QUIZ_STEPS.has(step)) return "quiz";
+  if (SLIDE_STEPS.has(step)) return "slides";
+  if (step === "loading" || step === "results" || step === "symptoms") return "results";
+  if (PROOF_STEPS.has(step)) return "proof";
+  if (step === "personalized-summary") return "summary";
+  if (step === "email-capture") return "email";
+  if (step === "free-trial") return "offer";
+  if (step === "trial-reminder") return "paywall";
+  return "other";
+}
 
 const Logo = () => (
   <img
@@ -2670,18 +2745,138 @@ const CustomPersonalizedSummary: React.FC<CustomProps> = ({ goNext, answers }) =
   );
 };
 
-const CustomTrialReminder: React.FC<CustomProps> = ({ goBack, answers }) => {
+const CustomEmailCapture: React.FC<
+  CustomProps & {
+    checkoutEmail: string;
+    setCheckoutEmail: (value: string) => void;
+    preparedCheckout: PreparedCheckout | null;
+    prepareCheckout: (args: { email: string; plan: CheckoutPlan; offer: string }) => Promise<PreparedCheckout>;
+    clearPreparedCheckout: () => void;
+  }
+> = ({
+  goNext,
+  checkoutEmail,
+  setCheckoutEmail,
+  preparedCheckout,
+  prepareCheckout,
+  clearPreparedCheckout,
+}) => {
+  const posthog = usePostHog();
+  const [checkoutEmailError, setCheckoutEmailError] = useState("");
+  const offerLevel = "50";
+  const normalizedCheckoutEmail = checkoutEmail.trim().toLowerCase();
+  const isCheckoutEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedCheckoutEmail);
+
+  const handleEmailChange = (value: string) => {
+    setCheckoutEmail(value);
+    if (checkoutEmailError) setCheckoutEmailError("");
+    if (preparedCheckout && preparedCheckout.email !== value.trim().toLowerCase()) {
+      clearPreparedCheckout();
+    }
+  };
+
+  const handleContinue = () => {
+    if (!isCheckoutEmailValid) {
+      setCheckoutEmailError("Champ requis");
+      return;
+    }
+
+    setCheckoutEmailError("");
+    if (posthog && normalizedCheckoutEmail) {
+      const distinctId = posthog.get_distinct_id();
+      posthog.identify(distinctId, {
+        email: normalizedCheckoutEmail,
+        flow_version: FLOW_VERSION,
+      });
+      if (posthog.people?.set) {
+        posthog.people.set({
+          email: normalizedCheckoutEmail,
+          flow_version: FLOW_VERSION,
+        });
+      }
+    }
+    void prepareCheckout({
+      email: normalizedCheckoutEmail,
+      plan: "month",
+      offer: offerLevel,
+    }).catch((err) => {
+      console.warn("Prepare checkout failed:", err);
+    });
+    goNext();
+  };
+
+  return (
+    <div className="onb-screen onb-black">
+      <div className="onb-question-header">
+        <div className="onb-header-spacer" />
+        <div className="onb-header-spacer" />
+        <div className="onb-header-spacer" />
+      </div>
+
+      <div className="onb-question-motion">
+        <div className="onb-question-content">
+          <h2 className="onb-title-lg">Entre ton email pour obtenir ton plan personnalisé</h2>
+
+          <div className="onb-email-field">
+            <label className="onb-helper" htmlFor="checkout-email">
+              Email
+            </label>
+            <input
+              id="checkout-email"
+              className="onb-input"
+              type="email"
+              autoComplete="email"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              inputMode="email"
+              placeholder="ton@email.com"
+              value={checkoutEmail}
+              onChange={(event) => handleEmailChange(event.target.value)}
+            />
+            {checkoutEmailError ? (
+              <p className="onb-checkout-email-error">{checkoutEmailError}</p>
+            ) : null}
+            <p className="onb-paywall-legal">Tu utiliseras cet email pour te connecter dans l'app.</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="onb-question-bottom onb-email-actions">
+        <button type="button" className="onb-btn-gold onb-trial-btn" onClick={handleContinue}>
+          Continuer
+        </button>
+      </div>
+    </div>
+  );
+};
+
+const CustomTrialReminder: React.FC<
+  CustomProps & {
+    checkoutEmail: string;
+    preparedCheckout: PreparedCheckout | null;
+    prepareCheckout: (args: { email: string; plan: CheckoutPlan; offer: string }) => Promise<PreparedCheckout>;
+    clearPreparedCheckout: () => void;
+    goToEmailStep: () => void;
+  }
+> = ({
+  goBack,
+  goToEmailStep,
+  answers,
+  checkoutEmail,
+  preparedCheckout,
+  prepareCheckout,
+  clearPreparedCheckout,
+}) => {
+  const posthog = usePostHog();
   const OFFER_TIMER_SECONDS_50 = 10 * 60;
   const [loading, setLoading] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(OFFER_TIMER_SECONDS_50);
-  const [selectedPlan, setSelectedPlan] = useState<"month" | "year">("month");
-  const [checkoutEmail, setCheckoutEmail] = useState("");
-  const [checkoutEmailError, setCheckoutEmailError] = useState("");
+  const [selectedPlan, setSelectedPlan] = useState<CheckoutPlan>("month");
   const promoCode = useMemo(() => buildPromoCode(answers.personalData?.firstName, "50"), [answers.personalData?.firstName]);
   const trialMainRef = useRef<HTMLDivElement | null>(null);
   const pricingSectionRef = useRef<HTMLElement | null>(null);
   const paymentMethodsRef = useRef<HTMLDivElement | null>(null);
-  const checkoutEmailInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -2723,6 +2918,21 @@ const CustomTrialReminder: React.FC<CustomProps> = ({ goBack, answers }) => {
       ? { original: "19,99€", discounted: "9,99€ / mois", saved: "10,00€" }
       : { original: "59,99€", discounted: "29,99€ / an", saved: "30,00€" };
 
+  const handlePlanChange = (plan: CheckoutPlan) => {
+    if (plan === selectedPlan) return;
+    setSelectedPlan(plan);
+    if (preparedCheckout && preparedCheckout.plan !== plan) {
+      clearPreparedCheckout();
+    }
+    if (isCheckoutEmailValid) {
+      void prepareCheckout({
+        email: normalizedCheckoutEmail,
+        plan,
+        offer: offerLevel,
+      }).catch(() => {});
+    }
+  };
+
   const startCheckout = async () => {
     if (loading) return;
     setLoading(true);
@@ -2732,45 +2942,52 @@ const CustomTrialReminder: React.FC<CustomProps> = ({ goBack, answers }) => {
       const checkoutIdentityError = getCheckoutIdentityError(identity);
       if (checkoutIdentityError) throw new Error(checkoutIdentityError);
       if (!isCheckoutEmailValid) {
-        setCheckoutEmailError("Champ requis");
-        const emailInput = checkoutEmailInputRef.current;
-        if (emailInput) {
-          emailInput.scrollIntoView({ block: "center", behavior: "smooth" });
-          window.setTimeout(() => emailInput.focus(), 220);
-        }
         setLoading(false);
+        goToEmailStep();
         return;
       }
-      setCheckoutEmailError("");
-      const { userId, userIdTs, userIdSig } = identity;
       const purchaseValue = selectedPlan === "month" ? 9.99 : 29.99;
 
       savePendingPurchase({ value: purchaseValue, currency: "EUR" });
+      savePendingCheckout({
+        currency: "EUR",
+        offerName: "intro_50",
+        planType: selectedPlan,
+        price: purchaseValue,
+      });
+      capturePostHogEvent(
+        posthog,
+        "checkout_started",
+        withFlowVersion({
+          currency: "EUR",
+          offer_name: "intro_50",
+          plan_type: selectedPlan,
+          price: purchaseValue,
+        })
+      );
       trackMetaEvent("InitiateCheckout", {
         currency: "EUR",
         value: purchaseValue,
       });
+      let checkoutUrl = "";
 
-      const API_BASE_URL = getApiBaseUrl();
-      const res = await fetch(`${API_BASE_URL}/api/create-checkout-session`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      if (
+        preparedCheckout &&
+        preparedCheckout.email === normalizedCheckoutEmail &&
+        preparedCheckout.plan === selectedPlan &&
+        preparedCheckout.offer === offerLevel
+      ) {
+        checkoutUrl = preparedCheckout.url;
+      } else {
+        const prepared = await prepareCheckout({
           email: normalizedCheckoutEmail,
           plan: selectedPlan,
           offer: offerLevel,
-          userId,
-          userIdTs,
-          userIdSig,
-        }),
-      });
-
-      const data = await res.json();
-      if (!res.ok || !data?.url) {
-        throw new Error(data?.error || "Erreur checkout");
+        });
+        checkoutUrl = prepared.url;
       }
 
-      window.location.href = data.url;
+      window.location.href = checkoutUrl;
     } catch (err) {
       console.error("Checkout error:", err);
       setLoading(false);
@@ -2898,7 +3115,7 @@ const CustomTrialReminder: React.FC<CustomProps> = ({ goBack, answers }) => {
 
           <article
             className={`onb-paywall-plan ${selectedPlan === "month" ? "is-selected" : ""}`}
-            onClick={() => setSelectedPlan("month")}
+            onClick={() => handlePlanChange("month")}
           >
             <div>
               <strong>Plan Mensuel</strong>
@@ -2911,7 +3128,7 @@ const CustomTrialReminder: React.FC<CustomProps> = ({ goBack, answers }) => {
 
           <article
             className={`onb-paywall-plan ${selectedPlan === "year" ? "is-selected" : ""}`}
-            onClick={() => setSelectedPlan("year")}
+            onClick={() => handlePlanChange("year")}
           >
             <div>
               <strong>Plan Annuel</strong>
@@ -2933,24 +3150,6 @@ const CustomTrialReminder: React.FC<CustomProps> = ({ goBack, answers }) => {
 
           <div className="onb-checkout-card">
             <h4>Paiement sécurisé</h4>
-
-            <div className="onb-checkout-email">
-              <label htmlFor="checkout-email">Email de connexion</label>
-              <input
-                id="checkout-email"
-                ref={checkoutEmailInputRef}
-                type="email"
-                inputMode="email"
-                autoComplete="email"
-                placeholder="ton@email.com"
-                value={checkoutEmail}
-                onChange={(e) => {
-                  setCheckoutEmail(e.target.value);
-                  if (checkoutEmailError) setCheckoutEmailError("");
-                }}
-              />
-              {checkoutEmailError ? <p className="onb-checkout-email-error">{checkoutEmailError}</p> : null}
-            </div>
 
             <div className="onb-checkout-row">
               <span>SOBRE Premium</span>
@@ -3001,6 +3200,84 @@ const CustomTrialReminder: React.FC<CustomProps> = ({ goBack, answers }) => {
   );
 };
 export default function OnboardingFirst5({ onDone, onLoginClick }: Props) {
+  const posthog = usePostHog();
+  const [checkoutEmail, setCheckoutEmailState] = useState("");
+  const [preparedCheckout, setPreparedCheckout] = useState<PreparedCheckout | null>(null);
+  const preparePromiseRef = useRef<Promise<PreparedCheckout> | null>(null);
+  const prepareKeyRef = useRef("");
+
+  const clearPreparedCheckout = useCallback(() => {
+    setPreparedCheckout(null);
+    preparePromiseRef.current = null;
+    prepareKeyRef.current = "";
+  }, []);
+
+  const setCheckoutEmail = useCallback(
+    (value: string) => {
+      setCheckoutEmailState(value);
+      const normalized = value.trim().toLowerCase();
+      if (preparedCheckout && preparedCheckout.email !== normalized) {
+        clearPreparedCheckout();
+      }
+    },
+    [clearPreparedCheckout, preparedCheckout]
+  );
+
+  const prepareCheckout = useCallback(
+    async ({ email, plan, offer }: { email: string; plan: CheckoutPlan; offer: string }) => {
+      const normalizedEmail = email.trim().toLowerCase();
+      if (!normalizedEmail) throw new Error("email manquant");
+
+      const identity = readFunnelIdentityFromSearch(window.location.search);
+      const checkoutIdentityError = getCheckoutIdentityError(identity);
+      if (checkoutIdentityError) throw new Error(checkoutIdentityError);
+
+      const key = `${normalizedEmail}|${plan}|${offer}|${identity.userId || "anonymous"}`;
+      if (preparedCheckout && preparedCheckout.key === key) return preparedCheckout;
+      if (prepareKeyRef.current === key && preparePromiseRef.current) {
+        return preparePromiseRef.current;
+      }
+
+      prepareKeyRef.current = key;
+
+      const promise = (async () => {
+        const API_BASE_URL = getApiBaseUrl();
+        const res = await fetch(`${API_BASE_URL}/api/create-checkout-session`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: normalizedEmail,
+            plan,
+            offer,
+            userId: identity.userId,
+            userIdTs: identity.userIdTs,
+            userIdSig: identity.userIdSig,
+          }),
+        });
+
+        const data = await res.json();
+        if (!res.ok || !data?.url) {
+          throw new Error(data?.error || "Erreur checkout");
+        }
+
+        const prepared = { key, url: data.url, email: normalizedEmail, plan, offer };
+        setPreparedCheckout(prepared);
+        return prepared;
+      })().catch((err) => {
+        if (prepareKeyRef.current === key) {
+          setPreparedCheckout(null);
+          preparePromiseRef.current = null;
+          prepareKeyRef.current = "";
+        }
+        throw err;
+      });
+
+      preparePromiseRef.current = promise;
+      return promise;
+    },
+    [preparedCheckout]
+  );
+
   const [stepIndex, setStepIndex] = useState(() => {
     const stepParam = new URLSearchParams(window.location.search).get("step");
     if (!stepParam || stepParam === "trial-reminder") {
@@ -3028,6 +3305,55 @@ export default function OnboardingFirst5({ onDone, onLoginClick }: Props) {
     ? cinematicPageVariants
     : defaultPageVariants;
 
+  useEffect(() => {
+    const { pathname, search } = window.location;
+    capturePostHogEventOnce(
+      posthog,
+      `landing_view:${pathname}${search}`,
+      "landing_view",
+      withFlowVersion({
+        path: pathname,
+        search,
+      })
+    );
+
+    const stepProperties = {
+      step_index: stepIndex + 1,
+      step_name: step,
+      step_group: getStepGroup(step),
+    };
+
+    capturePostHogEventOnce(
+      posthog,
+      `onboarding_step_viewed:${step}`,
+      "onboarding_step_viewed",
+      withFlowVersion(stepProperties)
+    );
+
+    if (step === "index") {
+      capturePostHogEventOnce(
+        posthog,
+        "onboarding_started",
+        "onboarding_started",
+        withFlowVersion(stepProperties)
+      );
+    }
+
+    if (step === "trial-reminder") {
+      capturePostHogEventOnce(
+        posthog,
+        "onboarding_completed",
+        "onboarding_completed",
+        withFlowVersion(stepProperties)
+      );
+      capturePostHogEventOnce(posthog, "paywall_viewed:intro_50", "paywall_viewed", {
+        ...withFlowVersion(stepProperties),
+        currency: "EUR",
+        offer_name: "intro_50",
+      });
+    }
+  }, [posthog, step, stepIndex]);
+
   const goNext = () => {
     if (stepIndex >= STEP_ORDER.length - 1) {
       onDone?.(answers);
@@ -3042,6 +3368,13 @@ export default function OnboardingFirst5({ onDone, onLoginClick }: Props) {
     setDirection(-1);
     setStepIndex((v) => v - 1);
   };
+
+  const goToEmailStep = useCallback(() => {
+    const targetIndex = STEP_ORDER.indexOf("email-capture");
+    if (targetIndex < 0) return;
+    setDirection(targetIndex >= stepIndex ? 1 : -1);
+    setStepIndex(targetIndex);
+  }, [stepIndex]);
 
   const customComponents: Record<
     StepId,
@@ -3084,9 +3417,8 @@ export default function OnboardingFirst5({ onDone, onLoginClick }: Props) {
       "personal-goals": CustomPersonalGoals,
       "commitment-signature": CustomCommitmentSignature,
       "rate-us": CustomRateUs,
-      "free-trial": CustomFreeTrial,
       "personalized-summary": CustomPersonalizedSummary,
-      "trial-reminder": CustomTrialReminder,
+      "free-trial": CustomFreeTrial,
     }),
     [onLoginClick]
   );
@@ -3105,13 +3437,41 @@ export default function OnboardingFirst5({ onDone, onLoginClick }: Props) {
           animate="center"
           exit="exit"
         >
-          <StepComponent
-            step={step}
-            goNext={goNext}
-            goBack={goBack}
-            answers={answers}
-            setAnswers={setAnswers}
-          />
+          {step === "email-capture" ? (
+            <CustomEmailCapture
+              step={step}
+              goNext={goNext}
+              goBack={goBack}
+              answers={answers}
+              setAnswers={setAnswers}
+              checkoutEmail={checkoutEmail}
+              setCheckoutEmail={setCheckoutEmail}
+              preparedCheckout={preparedCheckout}
+              prepareCheckout={prepareCheckout}
+              clearPreparedCheckout={clearPreparedCheckout}
+            />
+          ) : step === "trial-reminder" ? (
+            <CustomTrialReminder
+              step={step}
+              goNext={goNext}
+              goBack={goBack}
+              answers={answers}
+              setAnswers={setAnswers}
+              checkoutEmail={checkoutEmail}
+              preparedCheckout={preparedCheckout}
+              prepareCheckout={prepareCheckout}
+              clearPreparedCheckout={clearPreparedCheckout}
+              goToEmailStep={goToEmailStep}
+            />
+          ) : (
+            <StepComponent
+              step={step}
+              goNext={goNext}
+              goBack={goBack}
+              answers={answers}
+              setAnswers={setAnswers}
+            />
+          )}
         </motion.div>
       </AnimatePresence>
     </div>
