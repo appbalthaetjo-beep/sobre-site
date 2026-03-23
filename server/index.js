@@ -71,19 +71,21 @@ async function findSupabaseUserByEmail(email) {
   if (!supabaseAdmin) throw new Error("Supabase admin non configure");
 
   const targetEmail = normalizeEmail(email);
-  let page = 1;
-  const perPage = 200;
 
-  while (true) {
-    const { data, error } = await supabaseAdmin.auth.admin.listUsers({ page, perPage });
-    if (error) throw error;
+  const url = new URL(`${SUPABASE_URL}/auth/v1/admin/users`);
+  url.searchParams.set("filter", targetEmail);
+  url.searchParams.set("per_page", "1");
 
-    const users = data?.users || [];
-    const match = users.find((user) => normalizeEmail(user.email) === targetEmail);
-    if (match) return match;
-    if (users.length < perPage) return null;
-    page += 1;
-  }
+  const resp = await fetch(url.toString(), {
+    headers: {
+      apikey: SUPABASE_SERVICE_ROLE_KEY,
+      Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+    },
+  });
+  if (!resp.ok) throw new Error(`GoTrue listUsers error: ${resp.status}`);
+  const data = await resp.json();
+  const users = data?.users || [];
+  return users.find((u) => normalizeEmail(u.email) === targetEmail) || null;
 }
 
 async function getOrCreateSupabaseUserByEmail(email) {
