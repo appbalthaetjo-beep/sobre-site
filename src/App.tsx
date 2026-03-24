@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Brain, Target, Users, Zap, Shield, Trophy, CheckCircle } from 'lucide-react';
+import { getApiBaseUrl } from './lib/apiBaseUrl';
 
 const rewardsMilestones = [
   { src: 'https://i.imgur.com/I0CDkDl.png', title: 'Palier 1' },
@@ -19,6 +20,10 @@ function App() {
   const [trustedCount, setTrustedCount] = useState(0);
   const rewardsCarouselRef = useRef<HTMLDivElement | null>(null);
   const [activePage, setActivePage] = useState<'home' | 'support'>('home');
+
+  useEffect(() => {
+    void fetch(getApiBaseUrl() + "/api/health").catch(() => {});
+  }, []);
 
   useEffect(() => {
     const duration = 1200;

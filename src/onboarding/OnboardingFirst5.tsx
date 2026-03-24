@@ -3289,6 +3289,7 @@ export default function OnboardingFirst5({ onDone, onLoginClick }: Props) {
   });
   const [direction, setDirection] = useState<1 | -1>(1);
   const [answers, setAnswers] = useState<Answers>({ quizAnswers: {} });
+  const landingViewCapturedRef = useRef(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -3306,16 +3307,11 @@ export default function OnboardingFirst5({ onDone, onLoginClick }: Props) {
     : defaultPageVariants;
 
   useEffect(() => {
-    const { pathname, search } = window.location;
-    capturePostHogEventOnce(
-      posthog,
-      `landing_view:${pathname}${search}`,
-      "landing_view",
-      withFlowVersion({
-        path: pathname,
-        search,
-      })
-    );
+    if (posthog && !landingViewCapturedRef.current) {
+      const { pathname, search } = window.location;
+      capturePostHogEvent(posthog, "landing_view", withFlowVersion({ path: pathname, search }));
+      landingViewCapturedRef.current = true;
+    }
 
     const stepProperties = {
       step_index: stepIndex + 1,
