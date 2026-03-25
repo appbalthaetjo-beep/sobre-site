@@ -2263,7 +2263,7 @@ const CustomRateUs: React.FC<CustomProps> = ({ goNext }) => {
   );
 };
 
-const CustomFreeTrial: React.FC<CustomProps> = ({ goBack, goNext, answers }) => {
+const CustomFreeTrial: React.FC<CustomProps & { checkoutEmail: string }> = ({ goBack, goNext, answers, checkoutEmail }) => {
   const [phase, setPhase] = useState<"scratch" | "reveal">("scratch");
   const [isScratching, setIsScratching] = useState(false);
   const [scratchProgress, setScratchProgress] = useState(0);
@@ -2513,7 +2513,30 @@ const CustomFreeTrial: React.FC<CustomProps> = ({ goBack, goNext, answers }) => 
       )}
 
       {phase === "reveal" && (
-        <button className="onb-btn-gold onb-offer-btn" onClick={goNext}>
+        <button
+          className="onb-btn-gold onb-offer-btn"
+          onClick={() => {
+            const isIAB = /Instagram|FBAN|FBAV|FB_IAB|FBIOS|FBANDROID|MessengerForMac|FB4A/.test(navigator.userAgent);
+            const isIOS = /iPhone|iPad/.test(navigator.userAgent);
+            const isAndroid = /Android/.test(navigator.userAgent);
+            if (isIAB && (isIOS || isAndroid)) {
+              const url = new URL(window.location.href);
+              url.searchParams.set("step", "trial-reminder");
+              if (checkoutEmail) {
+                url.searchParams.set("email", btoa(checkoutEmail));
+              }
+              const a = document.createElement("a");
+              a.href = url.toString();
+              a.target = "_blank";
+              a.rel = "noopener";
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+            } else {
+              goNext();
+            }
+          }}
+        >
           Récupérer ma réduction
         </button>
       )}
@@ -3301,6 +3324,22 @@ export default function OnboardingFirst5({ onDone, onLoginClick }: Props) {
     window.history.replaceState({}, "", nextUrl);
   }, []);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("step") !== "trial-reminder") return;
+    const emailParam = params.get("email");
+    if (!emailParam) return;
+    try {
+      const decoded = atob(emailParam).trim().toLowerCase();
+      if (!decoded || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(decoded)) return;
+      setCheckoutEmail(decoded);
+      void prepareCheckout({ email: decoded, plan: "month", offer: "50" }).catch(() => {});
+    } catch {
+      // base64 invalide, on ignore
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const step = STEP_ORDER[stepIndex];
   const activePageVariants = CINEMATIC_SLIDE_STEPS.includes(step)
     ? cinematicPageVariants
@@ -3458,6 +3497,15 @@ export default function OnboardingFirst5({ onDone, onLoginClick }: Props) {
               prepareCheckout={prepareCheckout}
               clearPreparedCheckout={clearPreparedCheckout}
               goToEmailStep={goToEmailStep}
+            />
+          ) : step === "free-trial" ? (
+            <CustomFreeTrial
+              step={step}
+              goNext={goNext}
+              goBack={goBack}
+              answers={answers}
+              setAnswers={setAnswers}
+              checkoutEmail={checkoutEmail}
             />
           ) : (
             <StepComponent
