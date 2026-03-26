@@ -46,7 +46,8 @@ type StepId =
   | "free-trial"
   | "email-capture"
   | "personalized-summary"
-  | "trial-reminder";
+  | "trial-reminder"
+  | "open-browser";
 
 type Answers = {
   personalData?: { firstName: string };
@@ -126,6 +127,7 @@ const STEP_ORDER: StepId[] = [
   "email-capture",
   "free-trial",
   "trial-reminder",
+  "open-browser",
 ];
 
 const INTRO_STEPS = new Set<StepId>([
@@ -180,6 +182,7 @@ function getStepGroup(step: StepId) {
   if (step === "email-capture") return "email";
   if (step === "free-trial") return "offer";
   if (step === "trial-reminder") return "paywall";
+  if (step === "open-browser") return "other";
   return "other";
 }
 
@@ -2281,6 +2284,42 @@ const CustomRateUs: React.FC<CustomProps> = ({ goNext }) => {
   );
 };
 
+const CustomOpenBrowser: React.FC = () => {
+  const targetUrl = useMemo(() => {
+    const url = new URL(window.location.href);
+    url.searchParams.set("step", "trial-reminder");
+    return url.toString();
+  }, []);
+
+  return (
+    <div className="onb-screen onb-black">
+      <div className="onb-center-stack">
+        <div className="onb-header-block">
+          <Logo />
+        </div>
+        <h1 className="onb-title-xl" style={{ textAlign: "center", marginBottom: 8 }}>
+          Continue sur ton navigateur
+        </h1>
+        <p className="onb-subtitle" style={{ textAlign: "center", marginBottom: 32 }}>
+          Pour un paiement sécurisé, ouvre le lien dans Safari
+        </p>
+        <a
+          href={targetUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="onb-btn-gold"
+          style={{ display: "block", textDecoration: "none", textAlign: "center" }}
+        >
+          Ouvrir Safari
+        </a>
+        <p className="onb-welcome-meta" style={{ marginTop: 12 }}>
+          Tu seras redirigé vers la page de paiement
+        </p>
+      </div>
+    </div>
+  );
+};
+
 const CustomFreeTrial: React.FC<CustomProps & { checkoutEmail: string }> = ({ goBack, goNext, answers, checkoutEmail }) => {
   const [phase, setPhase] = useState<"scratch" | "reveal">("scratch");
   const [isScratching, setIsScratching] = useState(false);
@@ -2534,26 +2573,17 @@ const CustomFreeTrial: React.FC<CustomProps & { checkoutEmail: string }> = ({ go
         <button
           className="onb-btn-gold onb-offer-btn"
           onClick={() => {
-            try {
-              const isIAB = /Instagram|FBAN|FBAV|FB_IAB|FBIOS|FB4A/.test(navigator.userAgent);
-              const isIOS = /iPhone|iPad/.test(navigator.userAgent);
-              const isAndroid = /Android/.test(navigator.userAgent);
-              alert("isIAB: " + isIAB + " | isIOS: " + isIOS + " | isAndroid: " + isAndroid + " | email: " + checkoutEmail);
-              if (isIAB && (isIOS || isAndroid)) {
-                const url = new URL(window.location.href);
-                url.searchParams.set("step", "trial-reminder");
-                if (checkoutEmail) {
-                  url.searchParams.set("email", btoa(unescape(encodeURIComponent(checkoutEmail))));
-                }
-                const baseUrl = url.toString();
-                const finalUrl = getApiBaseUrl() + "/api/redirect?url=" + encodeURIComponent(baseUrl);
-                alert("IAB redirect (server 302) → " + finalUrl);
-                window.location.href = finalUrl;
-              } else {
-                goNext();
+            const isIAB = /Instagram|FBAN|FBAV|FB_IAB|FBIOS|FB4A/.test(navigator.userAgent);
+            const isIOS = /iPhone|iPad/.test(navigator.userAgent);
+            const isAndroid = /Android/.test(navigator.userAgent);
+            if (isIAB && (isIOS || isAndroid)) {
+              const url = new URL(window.location.href);
+              url.searchParams.set("step", "open-browser");
+              if (checkoutEmail) {
+                url.searchParams.set("email", btoa(unescape(encodeURIComponent(checkoutEmail))));
               }
-            } catch (err) {
-              alert("ERREUR: " + (err instanceof Error ? err.message : String(err)));
+              window.location.href = url.toString();
+            } else {
               goNext();
             }
           }}
@@ -3518,6 +3548,8 @@ export default function OnboardingFirst5({ onDone, onLoginClick }: Props) {
               setAnswers={setAnswers}
               checkoutEmail={checkoutEmail}
             />
+          ) : step === "open-browser" ? (
+            <CustomOpenBrowser />
           ) : (
             <StepComponent
               step={step}
