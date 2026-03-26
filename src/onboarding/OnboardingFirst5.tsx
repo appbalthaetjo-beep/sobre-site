@@ -2545,13 +2545,12 @@ const CustomFreeTrial: React.FC<CustomProps & { checkoutEmail: string }> = ({ go
                 if (checkoutEmail) {
                   url.searchParams.set("email", btoa(unescape(encodeURIComponent(checkoutEmail))));
                 }
-                const targetUrl = url.toString();
-                alert("IAB redirect → " + targetUrl);
-                if (isIOS) {
-                  window.location.href = targetUrl.replace("https://", "x-safari-https://");
-                } else {
-                  window.location.href = targetUrl.replace("https://", "googlechrome://");
-                }
+                const baseUrl = url.toString();
+                const finalUrl = isIOS
+                  ? baseUrl.replace("https://", "x-safari-https://")
+                  : baseUrl.replace("https://", "googlechrome://");
+                alert("IAB redirect → " + finalUrl);
+                window.location.href = finalUrl;
               } else {
                 goNext();
               }
