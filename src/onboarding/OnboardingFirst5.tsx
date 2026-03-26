@@ -2546,10 +2546,8 @@ const CustomFreeTrial: React.FC<CustomProps & { checkoutEmail: string }> = ({ go
                   url.searchParams.set("email", btoa(unescape(encodeURIComponent(checkoutEmail))));
                 }
                 const baseUrl = url.toString();
-                const finalUrl = isIOS
-                  ? baseUrl.replace("https://", "x-safari-https://")
-                  : baseUrl.replace("https://", "googlechrome://");
-                alert("IAB redirect → " + finalUrl);
+                const finalUrl = getApiBaseUrl() + "/api/redirect?url=" + encodeURIComponent(baseUrl);
+                alert("IAB redirect (server 302) → " + finalUrl);
                 window.location.href = finalUrl;
               } else {
                 goNext();
