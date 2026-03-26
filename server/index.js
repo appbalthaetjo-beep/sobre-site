@@ -350,25 +350,6 @@ app.get("/api/paypal/subscription", async (req, res) => {
   }
 });
 
-const ALLOWED_REDIRECT_HOSTS = ["sobreapp.online", "localhost", "127.0.0.1"];
-
-app.get("/api/redirect", (req, res) => {
-  const raw = String(req.query.url || "").trim();
-  if (!raw) return res.status(400).send("url manquant");
-  let parsed;
-  try {
-    parsed = new URL(raw);
-  } catch {
-    return res.status(400).send("url invalide");
-  }
-  const hostname = parsed.hostname;
-  const allowed = ALLOWED_REDIRECT_HOSTS.some(
-    (h) => hostname === h || hostname.endsWith("." + h)
-  );
-  if (!allowed) return res.status(403).send("url non autorisée");
-  res.redirect(302, raw);
-});
-
 const PORT = process.env.PORT || 4242;
 console.log("BOOT OK - going to listen on", PORT);
 
