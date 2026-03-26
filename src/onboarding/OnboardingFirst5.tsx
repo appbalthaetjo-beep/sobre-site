@@ -2538,8 +2538,7 @@ const CustomFreeTrial: React.FC<CustomProps & { checkoutEmail: string }> = ({ go
               const isIAB = /Instagram|FBAN|FBAV|FB_IAB|FBIOS|FB4A/.test(navigator.userAgent);
               const isIOS = /iPhone|iPad/.test(navigator.userAgent);
               const isAndroid = /Android/.test(navigator.userAgent);
-              console.log("userAgent:", navigator.userAgent);
-              console.log("isIAB:", isIAB, "isIOS:", isIOS, "isAndroid:", isAndroid);
+              alert("isIAB: " + isIAB + " | isIOS: " + isIOS + " | isAndroid: " + isAndroid + " | email: " + checkoutEmail);
               if (isIAB && (isIOS || isAndroid)) {
                 const url = new URL(window.location.href);
                 url.searchParams.set("step", "trial-reminder");
@@ -2547,18 +2546,17 @@ const CustomFreeTrial: React.FC<CustomProps & { checkoutEmail: string }> = ({ go
                   url.searchParams.set("email", btoa(unescape(encodeURIComponent(checkoutEmail))));
                 }
                 const targetUrl = url.toString();
-                console.log("IAB redirect →", targetUrl);
+                alert("IAB redirect → " + targetUrl);
                 if (isIOS) {
                   window.location.href = targetUrl.replace("https://", "x-safari-https://");
                 } else {
                   window.location.href = targetUrl.replace("https://", "googlechrome://");
                 }
               } else {
-                console.log("fallback → goNext()");
                 goNext();
               }
             } catch (err) {
-              console.error("onClick free-trial error:", err);
+              alert("ERREUR: " + (err instanceof Error ? err.message : String(err)));
               goNext();
             }
           }}
