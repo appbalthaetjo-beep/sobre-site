@@ -86,6 +86,23 @@
   color: #fff;
 }
 
+.onb-welcome-title {
+  max-width: 360px;
+  font-size: 36px;
+  line-height: 1.08;
+}
+
+.onb-welcome-progress {
+  width: min(360px, 100%);
+}
+
+.onb-welcome-meta {
+  margin: -2px 0 0;
+  font-size: 13px;
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.62);
+}
+
 .onb-btn-gold {
   border: 0;
   border-radius: 16px;
@@ -1430,6 +1447,12 @@
   font-weight: 800;
   font-size: 12px;
   flex-shrink: 0;
+}
+
+.onb-slide8-lock-icon {
+  width: 12px;
+  height: 12px;
+  display: block;
 }
 
 .onb-slide8-screen .onb-slide-copy {

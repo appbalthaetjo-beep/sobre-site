@@ -427,26 +427,31 @@ function useTypewriterMessages(
 
 const CustomWelcomeIntro: React.FC<
   CustomProps & { onLoginClick?: () => void }
-> = ({ goNext, onLoginClick }) => {
+> = ({ goNext }) => {
   return (
     <div className="onb-screen onb-black">
       <div className="onb-center-stack">
         <div className="onb-header-block">
           <Logo />
-          <h1 className="onb-title-xl">Bienvenue !</h1>
+          <h1 className="onb-title-xl onb-welcome-title">Crée ton plan personnalisé pour arrêter la pornographie</h1>
         </div>
 
         <p className="onb-subtitle">
-          {"Commen\u00e7ons par d\u00e9terminer si vous avez un probl\u00e8me avec la pornographie."}
+          Réponds à quelques questions et obtiens ton programme adapté à ta situation — comme les +5000 hommes qui ont
+          repris le contrôle
         </p>
 
+        <div className="onb-welcome-progress" aria-hidden="true">
+          <div className="onb-progress-bg">
+            <div className="onb-progress-fill" style={{ width: "10%" }} />
+          </div>
+        </div>
+
         <button className="onb-btn-gold" onClick={goNext}>
-          Commencer le quizz
+          Créer mon plan personnalisé
         </button>
 
-        <button className="onb-pill" onClick={onLoginClick}>
-          {"Disponible seulement sur App Store \uD83C\uDF4E"}
-        </button>
+        <p className="onb-welcome-meta">Résultats immédiats · 100% confidentiel</p>
       </div>
     </div>
   );
@@ -1627,6 +1632,19 @@ const CustomSlide8: React.FC<CustomProps> = ({ goNext }) => {
     return () => window.clearInterval(id);
   }, []);
 
+  const lockIcon = (
+    <svg className="onb-slide8-lock-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path
+        d="M7 11V8a5 5 0 1 1 10 0v3M6 11h12a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-8a1 1 0 0 1 1-1Z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+
   return (
     <div className="onb-screen onb-black onb-slide8-screen">
       <div className="onb-slide-header">
@@ -1640,7 +1658,7 @@ const CustomSlide8: React.FC<CustomProps> = ({ goNext }) => {
         </div>
         <div className="onb-slide8-card">
           <div className="onb-slide8-head">
-            <span className="onb-slide8-head-check">?</span>
+            <span className="onb-slide8-head-check">{blocked ? lockIcon : "…"}</span>
             <span>Sites bloqués</span>
             <span className="onb-slide8-head-count">· {blocked ? "1249" : "1248"}</span>
           </div>
@@ -1653,7 +1671,7 @@ const CustomSlide8: React.FC<CustomProps> = ({ goNext }) => {
                 <small>{blocked ? "Bloqué" : "Blocage..."}</small>
               </div>
             </div>
-            <div className="onb-slide8-site-status">?</div>
+            <div className="onb-slide8-site-status">{blocked ? lockIcon : "…"}</div>
           </div>
 
           <div className={`onb-slide8-site ${blocked ? "is-blocked" : ""}`}>
@@ -1667,7 +1685,7 @@ const CustomSlide8: React.FC<CustomProps> = ({ goNext }) => {
                 <small>{blocked ? "Bloqué" : "Blocage..."}</small>
               </div>
             </div>
-            <div className="onb-slide8-site-status">?</div>
+            <div className="onb-slide8-site-status">{blocked ? lockIcon : "…"}</div>
           </div>
         </div>
       </div>
@@ -1745,7 +1763,7 @@ const CustomSlide9: React.FC<CustomProps> = ({ goNext }) => {
           <div className="onb-slide9-mini-btn">+</div>
           <div className="onb-slide9-add-pill">+ Ajouter des apps</div>
         </div>
-        <div className="onb-slide9-start-btn">? Démarrer le blocage</div>
+        <div className="onb-slide9-start-btn">Démarrer le blocage</div>
       </div>
 
       <div className="onb-slide-copy onb-slide9-copy">
@@ -2895,7 +2913,7 @@ const CustomTrialReminder: React.FC<
   const OFFER_TIMER_SECONDS_50 = 10 * 60;
   const [loading, setLoading] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(OFFER_TIMER_SECONDS_50);
-  const [selectedPlan, setSelectedPlan] = useState<CheckoutPlan>("month");
+  const [selectedPlan, setSelectedPlan] = useState<CheckoutPlan>("year");
   const promoCode = useMemo(() => buildPromoCode(answers.personalData?.firstName, "50"), [answers.personalData?.firstName]);
   const trialMainRef = useRef<HTMLDivElement | null>(null);
   const pricingSectionRef = useRef<HTMLElement | null>(null);
@@ -2909,17 +2927,7 @@ const CustomTrialReminder: React.FC<
   }, []);
 
   useEffect(() => {
-    const stepParam = new URLSearchParams(window.location.search).get("step");
-    if (stepParam !== "trial-reminder") return;
-
-    const target = pricingSectionRef.current;
-    if (!target) return;
-
-    const timer = window.setTimeout(() => {
-      target.scrollIntoView({ block: "start" });
-    }, 60);
-
-    return () => window.clearTimeout(timer);
+    window.scrollTo(0, 0);
   }, []);
 
   useEffect(() => {
@@ -3333,7 +3341,7 @@ export default function OnboardingFirst5({ onDone, onLoginClick }: Props) {
       const decoded = atob(emailParam).trim().toLowerCase();
       if (!decoded || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(decoded)) return;
       setCheckoutEmail(decoded);
-      void prepareCheckout({ email: decoded, plan: "month", offer: "50" }).catch(() => {});
+      void prepareCheckout({ email: decoded, plan: "year", offer: "50" }).catch(() => {});
     } catch {
       // base64 invalide, on ignore
     }
@@ -3521,5 +3529,3 @@ export default function OnboardingFirst5({ onDone, onLoginClick }: Props) {
     </div>
   );
 }
-
-
