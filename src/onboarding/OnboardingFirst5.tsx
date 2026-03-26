@@ -2534,20 +2534,31 @@ const CustomFreeTrial: React.FC<CustomProps & { checkoutEmail: string }> = ({ go
         <button
           className="onb-btn-gold onb-offer-btn"
           onClick={() => {
-            const isIAB = /Instagram|FBAN|FBAV|FB_IAB|FBIOS|FB4A/.test(navigator.userAgent);
-            const isIOS = /iPhone|iPad/.test(navigator.userAgent);
-            const isAndroid = /Android/.test(navigator.userAgent);
-            const url = new URL(window.location.href);
-            url.searchParams.set("step", "trial-reminder");
-            if (checkoutEmail) {
-              url.searchParams.set("email", btoa(checkoutEmail));
-            }
-            const targetUrl = url.toString();
-            if (isIAB && isIOS) {
-              window.location.href = targetUrl.replace("https://", "x-safari-https://");
-            } else if (isIAB && isAndroid) {
-              window.location.href = targetUrl.replace("https://", "googlechrome://");
-            } else {
+            try {
+              const isIAB = /Instagram|FBAN|FBAV|FB_IAB|FBIOS|FB4A/.test(navigator.userAgent);
+              const isIOS = /iPhone|iPad/.test(navigator.userAgent);
+              const isAndroid = /Android/.test(navigator.userAgent);
+              console.log("userAgent:", navigator.userAgent);
+              console.log("isIAB:", isIAB, "isIOS:", isIOS, "isAndroid:", isAndroid);
+              if (isIAB && (isIOS || isAndroid)) {
+                const url = new URL(window.location.href);
+                url.searchParams.set("step", "trial-reminder");
+                if (checkoutEmail) {
+                  url.searchParams.set("email", btoa(unescape(encodeURIComponent(checkoutEmail))));
+                }
+                const targetUrl = url.toString();
+                console.log("IAB redirect →", targetUrl);
+                if (isIOS) {
+                  window.location.href = targetUrl.replace("https://", "x-safari-https://");
+                } else {
+                  window.location.href = targetUrl.replace("https://", "googlechrome://");
+                }
+              } else {
+                console.log("fallback → goNext()");
+                goNext();
+              }
+            } catch (err) {
+              console.error("onClick free-trial error:", err);
               goNext();
             }
           }}
