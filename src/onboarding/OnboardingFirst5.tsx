@@ -2534,22 +2534,19 @@ const CustomFreeTrial: React.FC<CustomProps & { checkoutEmail: string }> = ({ go
         <button
           className="onb-btn-gold onb-offer-btn"
           onClick={() => {
-            const isIAB = /Instagram|FBAN|FBAV|FB_IAB|FBIOS|FBANDROID|MessengerForMac|FB4A/.test(navigator.userAgent);
+            const isIAB = /Instagram|FBAN|FBAV|FB_IAB|FBIOS|FB4A/.test(navigator.userAgent);
             const isIOS = /iPhone|iPad/.test(navigator.userAgent);
             const isAndroid = /Android/.test(navigator.userAgent);
-            if (isIAB && (isIOS || isAndroid)) {
-              const url = new URL(window.location.href);
-              url.searchParams.set("step", "trial-reminder");
-              if (checkoutEmail) {
-                url.searchParams.set("email", btoa(checkoutEmail));
-              }
-              const a = document.createElement("a");
-              a.href = url.toString();
-              a.target = "_blank";
-              a.rel = "noopener";
-              document.body.appendChild(a);
-              a.click();
-              document.body.removeChild(a);
+            const url = new URL(window.location.href);
+            url.searchParams.set("step", "trial-reminder");
+            if (checkoutEmail) {
+              url.searchParams.set("email", btoa(checkoutEmail));
+            }
+            const targetUrl = url.toString();
+            if (isIAB && isIOS) {
+              window.location.href = targetUrl.replace("https://", "x-safari-https://");
+            } else if (isIAB && isAndroid) {
+              window.location.href = targetUrl.replace("https://", "googlechrome://");
             } else {
               goNext();
             }
