@@ -57,7 +57,7 @@ type Answers = {
   referralCode?: string;
 };
 
-type CheckoutPlan = "month" | "year";
+type CheckoutPlan = "week" | "month" | "year";
 
 type PreparedCheckout = {
   key: string;
@@ -2892,10 +2892,22 @@ const CustomTrialReminder: React.FC<
   clearPreparedCheckout,
 }) => {
   const posthog = usePostHog();
-  const OFFER_TIMER_SECONDS_50 = 10 * 60;
+  const OFFER_DURATION_SECS = 10 * 60;
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
-  const [secondsLeft, setSecondsLeft] = useState(OFFER_TIMER_SECONDS_50);
+  const [secondsLeft, setSecondsLeft] = useState<number>(() => {
+    try {
+      const stored = sessionStorage.getItem("sobre_paywall_timer_start");
+      if (stored) {
+        const elapsed = Math.floor((Date.now() - Number(stored)) / 1000);
+        return Math.max(0, OFFER_DURATION_SECS - elapsed);
+      }
+      sessionStorage.setItem("sobre_paywall_timer_start", String(Date.now()));
+      return OFFER_DURATION_SECS;
+    } catch {
+      return OFFER_DURATION_SECS;
+    }
+  });
   const [selectedPlan, setSelectedPlan] = useState<CheckoutPlan>("year");
   const promoCode = useMemo(() => buildPromoCode(answers.personalData?.firstName, "50"), [answers.personalData?.firstName]);
   const trialMainRef = useRef<HTMLDivElement | null>(null);
@@ -2904,7 +2916,16 @@ const CustomTrialReminder: React.FC<
 
   useEffect(() => {
     const timer = window.setInterval(() => {
-      setSecondsLeft((prev) => (prev > 0 ? prev - 1 : 0));
+      setSecondsLeft(() => {
+        try {
+          const stored = sessionStorage.getItem("sobre_paywall_timer_start");
+          if (!stored) return 0;
+          const elapsed = Math.floor((Date.now() - Number(stored)) / 1000);
+          return Math.max(0, OFFER_DURATION_SECS - elapsed);
+        } catch {
+          return 0;
+        }
+      });
     }, 1000);
     return () => window.clearInterval(timer);
   }, []);
@@ -2928,9 +2949,11 @@ const CustomTrialReminder: React.FC<
   const normalizedCheckoutEmail = checkoutEmail.trim().toLowerCase();
   const isCheckoutEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedCheckoutEmail);
   const prices =
-    selectedPlan === "month"
-      ? { original: "19,99€", discounted: "9,99€ / mois", saved: "10,00€" }
-      : { original: "59,99€", discounted: "29,99€ / an", saved: "30,00€" };
+    selectedPlan === "week"
+      ? { original: "9,99€",  discounted: "6,99€",  saved: "3,00€"  }
+      : selectedPlan === "month"
+      ? { original: "19,99€", discounted: "12,99€", saved: "7,00€"  }
+      : { original: "79,99€", discounted: "39,99€", saved: "40,00€" };
 
   const handlePlanChange = (plan: CheckoutPlan) => {
     if (plan === selectedPlan) return;
@@ -3040,7 +3063,11 @@ const CustomTrialReminder: React.FC<
                 loading="lazy"
               />
             </div>
-            <div className="onb-compare-arrow">›</div>
+            <div className="onb-compare-arrow">
+              <span>›</span>
+              <span>›</span>
+              <span>›</span>
+            </div>
             <div className="onb-compare-col">
               <img
                 className="onb-compare-brain"
@@ -3083,24 +3110,92 @@ const CustomTrialReminder: React.FC<
           </div>
         </section>
 
-        <section className="onb-paywall-intro">
-          <h2>Ton plan SOBRE personnalisé est prêt</h2>
-          <p>Un système concret pour reprendre le contrôle jour après jour.</p>
-          <ul className="onb-quick-benefits">
-            <li>Clarté mentale en quelques jours</li>
-            <li>Routine stable en 2 semaines</li>
-            <li>Transformation durable en 30 jours</li>
-          </ul>
-        </section>
+        <h2 className="onb-paywall-title">
+          Ton plan SOBRE personnalisé est prêt !
+        </h2>
 
-        <section className="onb-paywall-list">
-          <h3>Comment atteindre ton objectif avec SOBRE</h3>
-          <p>🛑 Active le blocage des apps et contenus déclencheurs</p>
-          <p>🚨 Utilise les outils d’urgence quand une envie apparaît</p>
-          <p>👥 Avance avec la communauté SOBRE</p>
-          <p>🧠 Suis la méthode basée sur les neurosciences</p>
-          <p>📈 Suis ta progression jour après jour</p>
-          <p>🎯 Complète le programme Detox 30-60-90</p>
+        <section className="onb-pricing-new" ref={pricingSectionRef}>
+
+          {/* Coupon ticket */}
+          <div className="onb-coupon">
+            <div className="onb-coupon-top">
+              <span className="onb-coupon-icon">🏷</span>
+              <span className="onb-coupon-headline">Ton code promo a été appliqué !</span>
+            </div>
+            <div className="onb-coupon-divider">
+              <div className="onb-coupon-notch is-left" />
+              <div className="onb-coupon-notch is-right" />
+            </div>
+            <div className="onb-coupon-bottom">
+              <div className="onb-coupon-code-block">
+                <span className="onb-coupon-check">✓</span>
+                <span className="onb-coupon-code-text">{promoCode}</span>
+              </div>
+              <div className="onb-coupon-timer-block">
+                <div className="onb-coupon-time">{minutes}:{seconds}</div>
+                <div className="onb-coupon-time-label">minutes&nbsp;&nbsp;&nbsp;secondes</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Plans */}
+          <div className="onb-plans">
+
+            <article
+              className={`onb-plan ${selectedPlan === "week" ? "is-selected" : ""}`}
+              onClick={() => handlePlanChange("week")}
+            >
+              <div className={`onb-plan-radio ${selectedPlan === "week" ? "is-on" : ""}`} />
+              <div className="onb-plan-info">
+                <strong>7 jours d'essai</strong>
+                <span className="onb-plan-sublabel">ESSAI 7 JOURS</span>
+                <span className="onb-plan-reduction"><s>9,99 €</s> → 6,99 €</span>
+              </div>
+              <div className="onb-plan-price">
+                <span className="onb-plan-orig">1,43 €</span>
+                <span className="onb-plan-amount">0,99 €</span>
+                <span className="onb-plan-per">par jour</span>
+              </div>
+            </article>
+
+            <div className="onb-plan-featured-wrap">
+              <div className="onb-plan-badge">LE PLUS POPULAIRE</div>
+              <article
+                className={`onb-plan is-featured ${selectedPlan === "year" ? "is-selected" : ""}`}
+                onClick={() => handlePlanChange("year")}
+              >
+                <div className={`onb-plan-radio ${selectedPlan === "year" ? "is-on" : ""}`} />
+                <div className="onb-plan-info">
+                  <strong>Plan annuel</strong>
+                  <span className="onb-plan-sublabel">PLAN 12 MOIS</span>
+                  <span className="onb-plan-reduction"><s>79,99 €</s> → 39,99 €</span>
+                </div>
+                <div className="onb-plan-price">
+                  <span className="onb-plan-orig">0,22 €</span>
+                  <span className="onb-plan-amount">0,11 €</span>
+                  <span className="onb-plan-per">par jour</span>
+                </div>
+              </article>
+            </div>
+
+            <article
+              className={`onb-plan ${selectedPlan === "month" ? "is-selected" : ""}`}
+              onClick={() => handlePlanChange("month")}
+            >
+              <div className={`onb-plan-radio ${selectedPlan === "month" ? "is-on" : ""}`} />
+              <div className="onb-plan-info">
+                <strong>Plan mensuel</strong>
+                <span className="onb-plan-sublabel">PLAN 30 JOURS</span>
+                <span className="onb-plan-reduction"><s>19,99 €</s> → 12,99 €</span>
+              </div>
+              <div className="onb-plan-price">
+                <span className="onb-plan-orig">0,67 €</span>
+                <span className="onb-plan-amount">0,43 €</span>
+                <span className="onb-plan-per">par jour</span>
+              </div>
+            </article>
+
+          </div>
         </section>
 
         <section className="onb-paywall-proof">
@@ -3108,12 +3203,12 @@ const CustomTrialReminder: React.FC<
           <div className="onb-paywall-reviews">
             <blockquote>
               <div className="onb-review-stars">★★★★★</div>
-              <p className="onb-review-quote">"En 10 jours j’ai retrouvé de la clarté."</p>
+              <p className="onb-review-quote">"En 10 jours j'ai retrouvé de la clarté."</p>
               <div className="onb-review-meta">— Lucas · 10 jours</div>
             </blockquote>
             <blockquote>
               <div className="onb-review-stars">★★★★★</div>
-              <p className="onb-review-quote">"Le suivi quotidien m’aide vraiment à tenir."</p>
+              <p className="onb-review-quote">"Le suivi quotidien m'aide vraiment à tenir."</p>
               <div className="onb-review-meta">— Thomas · 3 semaines</div>
             </blockquote>
             <blockquote>
@@ -3122,44 +3217,6 @@ const CustomTrialReminder: React.FC<
               <div className="onb-review-meta">— Marc · 4 mois</div>
             </blockquote>
           </div>
-        </section>
-
-        <section className="onb-paywall-pricing" ref={pricingSectionRef}>
-          <h3>Choisis ton plan</h3>
-          <div className="onb-pricing-promo">
-            <div className="onb-pricing-promo-head">✅ Code promo appliqué</div>
-            <div className="onb-pricing-promo-row">
-              <span className="onb-pricing-promo-code">{promoCode}</span>
-              <span className="onb-pricing-promo-timer">{minutes}:{seconds}</span>
-            </div>
-          </div>
-
-          <article
-            className={`onb-paywall-plan ${selectedPlan === "month" ? "is-selected" : ""}`}
-            onClick={() => handlePlanChange("month")}
-          >
-            <div>
-              <strong>Plan Mensuel</strong>
-              <p>
-                <s>19,99€</s> <span>-${offerLevel}%</span>
-              </p>
-            </div>
-            <div className="onb-paywall-price">9,99€ / mois</div>
-          </article>
-
-          <article
-            className={`onb-paywall-plan ${selectedPlan === "year" ? "is-selected" : ""}`}
-            onClick={() => handlePlanChange("year")}
-          >
-            <div>
-              <strong>Plan Annuel</strong>
-              <p>
-                <s>59,99€</s> <span>-${offerLevel}%</span>
-              </p>
-            </div>
-            <div className="onb-paywall-price">29,99€ / an</div>
-          </article>
-
         </section>
 
         <section className="onb-checkout-block">
@@ -3233,8 +3290,8 @@ const CustomTrialReminder: React.FC<
       </div>
 
       <div className="onb-paywall-cta-wrap">
-        <button className="onb-btn-gold onb-trial-btn" onClick={scrollToPaymentMethods}>
-          Commencer maintenant
+        <button className="onb-btn-cream onb-trial-btn" onClick={scrollToPaymentMethods}>
+          ACTIVER MON PLAN SOBRE
         </button>
         <p className="onb-paywall-legal">Annulation à tout moment</p>
       </div>

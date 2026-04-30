@@ -2797,9 +2797,9 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 24px;
   overflow: auto;
-  padding: 8px 10px calc(232px + env(safe-area-inset-bottom));
+  padding: 12px 16px calc(232px + env(safe-area-inset-bottom));
 }
 
 .onb-paywall-timer-wrap {
@@ -3424,7 +3424,7 @@
   position: sticky;
   bottom: 0;
   padding: 10px 10px max(18px, env(safe-area-inset-bottom));
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0), #000 38%);
+  background: linear-gradient(180deg, rgba(5, 5, 5, 0), #050505 38%);
   isolation: isolate;
   z-index: 40;
 }
@@ -3446,12 +3446,8 @@
 }
 
 @media (max-width: 420px) {
-  .onb-paywall-intro h2 {
-    font-size: 24px;
-  }
-
-  .onb-paywall-intro > p {
-    font-size: 14px;
+  .onb-paywall-title {
+    font-size: 26px;
   }
 
   .onb-paywall-timer {
@@ -3555,17 +3551,30 @@
   display: block;
 }
 
+@keyframes arrow-chase {
+  0%, 60%, 100% { opacity: 0.2; transform: translateX(0);   }
+  30%            { opacity: 1;   transform: translateX(4px); }
+}
+
 .onb-compare-arrow {
   flex-shrink: 0;
-  width: 32px;
-  text-align: center;
-  font-size: 28px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0px;
+}
+
+.onb-compare-arrow span {
+  font-size: 26px;
   color: #EDE3D3;
   line-height: 1;
-  animation:
-    arrow-pulse  0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.55s both,
-    arrow-breathe 2s ease-in-out 1.1s infinite;
+  opacity: 0.2;
+  animation: arrow-chase 1.4s ease-in-out infinite;
 }
+
+.onb-compare-arrow span:nth-child(1) { animation-delay: 0s;    }
+.onb-compare-arrow span:nth-child(2) { animation-delay: 0.18s; }
+.onb-compare-arrow span:nth-child(3) { animation-delay: 0.36s; }
 
 /* ── Metrics grid (replaces label lists) ─────────────────── */
 
@@ -3682,4 +3691,299 @@
   left: 0;
   color: #EDE3D3;
   font-weight: 700;
+}
+
+/* ── BetterMe-style pricing ──────────────────────────────── */
+
+.onb-pricing-new {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Coupon ticket */
+.onb-coupon {
+  border-radius: 18px;
+  overflow: hidden;
+  background: #C96A1A;
+}
+
+.onb-coupon-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  background: #D4721E;
+}
+
+.onb-coupon-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.onb-coupon-headline {
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.onb-coupon-divider {
+  position: relative;
+  height: 0;
+  border-top: 2px dashed rgba(0, 0, 0, 0.25);
+  margin: 0 16px;
+}
+
+.onb-coupon-notch {
+  position: absolute;
+  top: 50%;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #050505;
+  transform: translateY(-50%);
+}
+
+.onb-coupon-notch.is-left  { left:  -24px; }
+.onb-coupon-notch.is-right { right: -24px; }
+
+.onb-coupon-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  gap: 10px;
+}
+
+.onb-coupon-code-block {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 10px;
+  padding: 8px 12px;
+}
+
+.onb-coupon-check {
+  color: #5fdb82;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.onb-coupon-code-text {
+  color: #fff;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+}
+
+.onb-coupon-timer-block {
+  text-align: center;
+}
+
+.onb-coupon-time {
+  color: #fff;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  line-height: 1;
+}
+
+.onb-coupon-time-label {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+
+/* Plan cards */
+.onb-plans {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.onb-plan {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 14px;
+  border-radius: 14px;
+  border: 1px solid #1e1c19;
+  background: #0e0d0b;
+  cursor: pointer;
+  transition: border-color 0.15s;
+  opacity: 0.92;
+}
+
+.onb-plan.is-featured,
+.onb-plan-featured-wrap .onb-plan {
+  opacity: 1;
+}
+
+.onb-plan.is-selected {
+  border-color: #EDE3D3;
+  background: #1d1a16;
+}
+
+.onb-plan-featured-wrap {
+  border-radius: 16px;
+  border: 1.5px solid #EDE3D3;
+  overflow: hidden;
+}
+
+.onb-plan-badge {
+  background: #EDE3D3;
+  color: #111;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  padding: 5px 0;
+  text-transform: uppercase;
+}
+
+.onb-plan-featured-wrap .onb-plan {
+  border: none;
+  border-radius: 0;
+  background: #1d1a16;
+}
+
+.onb-plan-radio {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid #3a3530;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.15s;
+}
+
+.onb-plan-radio.is-on {
+  border-color: #EDE3D3;
+  background: #EDE3D3;
+}
+
+.onb-plan-radio.is-on::after {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #111;
+}
+
+.onb-plan-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.onb-plan-info strong {
+  display: block;
+  color: #F3EBDD;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.onb-plan-sublabel {
+  display: inline-block;
+  color: rgba(243, 235, 221, 0.55);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  background: rgba(243, 235, 221, 0.08);
+  border-radius: 4px;
+  padding: 2px 6px;
+  text-transform: uppercase;
+  width: fit-content;
+}
+
+.onb-plan-reduction {
+  display: block;
+  color: rgba(243, 235, 221, 0.45);
+  font-size: 11px;
+}
+
+.onb-plan-reduction s {
+  color: rgba(243, 235, 221, 0.45);
+  text-decoration: line-through;
+  text-decoration-color: #e05555;
+}
+
+.onb-plan-price {
+  text-align: right;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+}
+
+.onb-plan-orig {
+  display: block;
+  color: rgba(243, 235, 221, 0.35);
+  font-size: 11px;
+  text-decoration: line-through;
+  line-height: 1.2;
+}
+
+.onb-plan-amount {
+  display: block;
+  color: #F3EBDD;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.05;
+  white-space: nowrap;
+}
+
+.onb-plan-per {
+  display: block;
+  color: rgba(243, 235, 221, 0.5);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+/* Cream CTA button */
+.onb-btn-cream {
+  border: 0;
+  border-radius: 999px;
+  padding: 18px 28px;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  color: #111111;
+  cursor: pointer;
+  background: #EDE3D3;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+  width: min(420px, 100%);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.onb-btn-cream:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
+}
+
+.onb-btn-cream:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.onb-paywall-title {
+  margin: 8px 0 4px;
+  padding: 0 8px;
+  color: #F3EBDD;
+  font-size: 30px;
+  font-weight: 800;
+  line-height: 1.12;
+  letter-spacing: -0.3px;
+  text-align: center;
 }
