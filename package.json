@@ -12,7 +12,8 @@
   "dependencies": {
     "@paypal/react-paypal-js": "^9.0.0",
     "@posthog/react": "^1.8.2",
-    "@stripe/stripe-js": "^8.8.0",
+    "@stripe/react-stripe-js": "^6.3.0",
+    "@stripe/stripe-js": "^9.3.1",
     "framer-motion": "^12.34.3",
     "lucide-react": "^0.344.0",
     "posthog-js": "^1.360.2",

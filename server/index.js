@@ -232,6 +232,114 @@ app.post("/api/create-checkout-session", async (req, res) => {
   }
 });
 
+app.post("/api/create-payment-intent", async (req, res) => {
+  try {
+    const { email, plan, offer, userId, userIdSig, userIdTs } = req.body;
+    const requestedUserId = String(userId || "").trim();
+    const normalizedEmail = normalizeEmail(email);
+
+    if (!normalizedEmail) {
+      return res.status(400).json({ error: "email manquant" });
+    }
+
+    if (requestedUserId && !isTrustedUserId({ userId: requestedUserId, userIdTs, userIdSig })) {
+      return res.status(401).json({ error: "userId non verifie" });
+    }
+
+    const supabaseUser = await getOrCreateSupabaseUserByEmail(normalizedEmail);
+    const appUserId = String(supabaseUser.id || "").trim();
+    if (!appUserId) {
+      return res.status(500).json({ error: "Impossible de resoudre le user Supabase pour cet email" });
+    }
+
+    if (requestedUserId && requestedUserId !== appUserId) {
+      return res.status(409).json({
+        error: `Identite incoherente: funnel userId ${requestedUserId} != Supabase user.id ${appUserId}`,
+      });
+    }
+
+    if (isSandboxAppUserId(appUserId) && !ALLOW_SANDBOX_CHECKOUT) {
+      return res.status(400).json({ error: `Checkout bloque: app_user_id sandbox refuse (${SANDBOX_DEFAULT_USER_ID})` });
+    }
+
+    const priceId = getPriceId({ plan, offer });
+    if (!priceId) return res.status(400).json({ error: "Price ID introuvable" });
+
+    const existingCustomers = await stripe.customers.list({ email: normalizedEmail, limit: 1 });
+    const stripeCustomer =
+      existingCustomers.data.length > 0
+        ? existingCustomers.data[0]
+        : await stripe.customers.create({
+            email: normalizedEmail,
+            metadata: { app_user_id: appUserId, auth_email: normalizedEmail },
+          });
+
+    const subscription = await stripe.subscriptions.create({
+      customer: stripeCustomer.id,
+      items: [{ price: priceId }],
+      payment_behavior: "default_incomplete",
+      payment_settings: { save_default_payment_method: "on_subscription" },
+      expand: ["latest_invoice.payment_intent"],
+      // app_user_id est dans subscription.metadata — les webhooks doivent lire ici,
+      // en expandant subscription depuis l'invoice (invoice.subscription).
+      metadata: { app_user_id: appUserId, auth_email: normalizedEmail, plan, offer },
+    });
+
+    const invoice = subscription.latest_invoice;
+    if (typeof invoice !== "object" || !invoice) {
+      return res.status(500).json({ error: "Facture Stripe introuvable" });
+    }
+    const paymentIntent = invoice.payment_intent;
+    if (typeof paymentIntent !== "object" || !paymentIntent?.client_secret) {
+      return res.status(500).json({ error: "PaymentIntent introuvable dans la facture" });
+    }
+
+    res.json({
+      client_secret: paymentIntent.client_secret,
+      subscription_id: subscription.id,
+      customer_id: stripeCustomer.id,
+      app_user_id: appUserId,
+      auth_email: normalizedEmail,
+    });
+  } catch (e) {
+    console.error("Stripe payment intent error:", e);
+    res.status(500).json({ error: e?.message || "Erreur Stripe" });
+  }
+});
+
+app.get("/api/stripe/payment-intent", async (req, res) => {
+  try {
+    const paymentIntentId = String(req.query.payment_intent_id || "");
+    if (!paymentIntentId) return res.status(400).json({ error: "payment_intent_id manquant" });
+
+    const pi = await stripe.paymentIntents.retrieve(paymentIntentId, {
+      expand: ["invoice.subscription", "customer"],
+    });
+
+    const isValidated = pi.status === "succeeded";
+    const invoiceObj = typeof pi.invoice === "object" ? pi.invoice : null;
+    const subscriptionObj =
+      invoiceObj && typeof invoiceObj.subscription === "object" ? invoiceObj.subscription : null;
+    const customerObj = typeof pi.customer === "object" ? pi.customer : null;
+
+    res.json({
+      id: pi.id,
+      status: pi.status,
+      is_validated: isValidated,
+      app_user_id: String(subscriptionObj?.metadata?.app_user_id || "").trim() || null,
+      // receipt_email peut être null sur les abonnements ; fallback sur customer.email
+      customer_email: pi.receipt_email || customerObj?.email || null,
+      subscription_id: subscriptionObj?.id || null,
+    });
+  } catch (e) {
+    if (e?.type === "StripeInvalidRequestError") {
+      return res.status(404).json({ error: "PaymentIntent Stripe introuvable" });
+    }
+    console.error("Stripe payment intent retrieve error:", e);
+    res.status(500).json({ error: "Erreur recuperation PaymentIntent Stripe" });
+  }
+});
+
 app.post("/api/funnel/signed-url", (req, res) => {
   try {
     const signerApiKey = String(req.header("x-funnel-signer-key") || "").trim();

@@ -4,7 +4,8 @@
       "Bash(grep -rn \"stripe\\\\|Stripe\" /c/s/sobre-site-main/src --include=*.tsx --include=*.ts)",
       "Bash(grep -rn stripe /c/s/sobre-site-main --include=*.html --include=*.json)",
       "Bash(find /c/s/sobre-site-main -name vite.config.* -o -name .env*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(npm install *)"
     ]
   }
 }

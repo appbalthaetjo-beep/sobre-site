@@ -16,7 +16,7 @@ const APP_STORE_URL =
 
 type CheckState = "loading" | "success" | "pending" | "error";
 
-type SessionPayload = {
+type VerifyPayload = {
   id?: string;
   status?: string;
   payment_status?: string;
@@ -32,15 +32,16 @@ export default function Success() {
   const [customerEmail, setCustomerEmail] = useState("");
   const trialReminderUrl = useMemo(() => buildTrialReminderUrl(window.location.search), []);
 
-  const sessionId = useMemo(() => {
-    return String(new URLSearchParams(window.location.search).get("session_id") || "").trim();
-  }, []);
+  const params = useMemo(() => new URLSearchParams(window.location.search), []);
+  const sessionId = useMemo(() => String(params.get("session_id") || "").trim(), [params]);
+  const paymentIntentId = useMemo(() => String(params.get("payment_intent") || "").trim(), [params]);
 
   useEffect(() => {
     let cancelled = false;
 
     const verifySession = async () => {
-      if (!sessionId) {
+      const verifyId = paymentIntentId || sessionId;
+      if (!verifyId) {
         setState("error");
         setMessage("Session absente. Merci de revenir depuis le lien de paiement.");
         return;
@@ -48,8 +49,11 @@ export default function Success() {
 
       try {
         const API_BASE_URL = getApiBaseUrl();
-        const res = await fetch(`${API_BASE_URL}/api/stripe/session?session_id=${encodeURIComponent(sessionId)}`);
-        const data = (await res.json().catch(() => ({}))) as SessionPayload;
+        const endpoint = paymentIntentId
+          ? `${API_BASE_URL}/api/stripe/payment-intent?payment_intent_id=${encodeURIComponent(paymentIntentId)}`
+          : `${API_BASE_URL}/api/stripe/session?session_id=${encodeURIComponent(sessionId)}`;
+        const res = await fetch(endpoint);
+        const data = (await res.json().catch(() => ({}))) as VerifyPayload;
         if (cancelled) return;
 
         if (!res.ok || !data?.id) {
@@ -59,16 +63,17 @@ export default function Success() {
         }
 
         if (data.is_validated) {
+          const eventId = paymentIntentId || sessionId;
           const pendingPurchase = readPendingPurchase();
           const pendingCheckout = readPendingCheckout();
-          trackMetaEventOnce(`Purchase:${sessionId}`, "Purchase", {
+          trackMetaEventOnce(`Purchase:${eventId}`, "Purchase", {
             currency: "EUR",
             value: pendingPurchase?.value ?? 0,
           });
           clearPendingPurchase();
           capturePostHogEventOnce(
             posthog,
-            `purchase_completed:${sessionId}`,
+            `purchase_completed:${eventId}`,
             "purchase_completed",
             withFlowVersion({
               currency: pendingCheckout?.currency ?? "EUR",
@@ -97,18 +102,20 @@ export default function Success() {
     return () => {
       cancelled = true;
     };
-  }, [posthog, sessionId]);
+  }, [posthog, sessionId, paymentIntentId]);
 
   useEffect(() => {
+    const eventId = paymentIntentId || sessionId;
     capturePostHogEventOnce(
       posthog,
-      `success_viewed:${sessionId || "unknown"}`,
+      `success_viewed:${eventId || "unknown"}`,
       "success_viewed",
       withFlowVersion({
         session_id: sessionId || null,
+        payment_intent_id: paymentIntentId || null,
       })
     );
-  }, [posthog, sessionId]);
+  }, [posthog, sessionId, paymentIntentId]);
 
   const kicker =
     state === "success"

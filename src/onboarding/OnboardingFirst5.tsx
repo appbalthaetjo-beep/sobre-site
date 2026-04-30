@@ -6,6 +6,7 @@ import { getApiBaseUrl } from "../lib/apiBaseUrl";
 import { getCheckoutIdentityError, readFunnelIdentityFromSearch } from "../lib/funnelIdentity";
 import { savePendingPurchase, trackMetaEvent, trackMetaEventOnce } from "../lib/metaPixel";
 import { capturePostHogEvent, capturePostHogEventOnce, savePendingCheckout } from "../lib/posthog";
+import { StripePaymentForm } from "../components/StripePaymentForm";
 type StepId =
   | "index"
   | "story"
@@ -60,7 +61,8 @@ type CheckoutPlan = "month" | "year";
 
 type PreparedCheckout = {
   key: string;
-  url: string;
+  clientSecret: string;
+  subscriptionId: string;
   email: string;
   plan: CheckoutPlan;
   offer: string;
@@ -2891,7 +2893,7 @@ const CustomTrialReminder: React.FC<
 }) => {
   const posthog = usePostHog();
   const OFFER_TIMER_SECONDS_50 = 10 * 60;
-  const [loading, setLoading] = useState(false);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
   const [secondsLeft, setSecondsLeft] = useState(OFFER_TIMER_SECONDS_50);
   const [selectedPlan, setSelectedPlan] = useState<CheckoutPlan>("year");
   const promoCode = useMemo(() => buildPromoCode(answers.personalData?.firstName, "50"), [answers.personalData?.firstName]);
@@ -2944,67 +2946,36 @@ const CustomTrialReminder: React.FC<
     }
   };
 
-  const startCheckout = async () => {
-    if (loading) return;
-    setLoading(true);
-
-    try {
-      const identity = readFunnelIdentityFromSearch(window.location.search);
-      const checkoutIdentityError = getCheckoutIdentityError(identity);
-      if (checkoutIdentityError) throw new Error(checkoutIdentityError);
-      if (!isCheckoutEmailValid) {
-        setLoading(false);
-        goToEmailStep();
-        return;
-      }
-      const purchaseValue = selectedPlan === "month" ? 9.99 : 29.99;
-
-      savePendingPurchase({ value: purchaseValue, currency: "EUR" });
-      savePendingCheckout({
-        currency: "EUR",
-        offerName: "intro_50",
-        planType: selectedPlan,
-        price: purchaseValue,
-      });
-      capturePostHogEvent(
-        posthog,
-        "checkout_started",
-        withFlowVersion({
-          currency: "EUR",
-          offer_name: "intro_50",
-          plan_type: selectedPlan,
-          price: purchaseValue,
-        })
-      );
-      trackMetaEvent("InitiateCheckout", {
-        currency: "EUR",
-        value: purchaseValue,
-      });
-      let checkoutUrl = "";
-
-      if (
-        preparedCheckout &&
-        preparedCheckout.email === normalizedCheckoutEmail &&
-        preparedCheckout.plan === selectedPlan &&
-        preparedCheckout.offer === offerLevel
-      ) {
-        checkoutUrl = preparedCheckout.url;
-      } else {
-        const prepared = await prepareCheckout({
-          email: normalizedCheckoutEmail,
-          plan: selectedPlan,
-          offer: offerLevel,
-        });
-        checkoutUrl = prepared.url;
-      }
-
-      window.location.href = checkoutUrl;
-    } catch (err) {
-      console.error("Checkout error:", err);
-      setLoading(false);
-      const message = err instanceof Error ? err.message : "Impossible de lancer le paiement pour le moment.";
-      alert(message);
+  useEffect(() => {
+    if (isCheckoutEmailValid && !preparedCheckout) {
+      void prepareCheckout({ email: normalizedCheckoutEmail, plan: selectedPlan, offer: offerLevel }).catch(() => {});
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleBeforePayment = () => {
+    const purchaseValue = selectedPlan === "month" ? 9.99 : 29.99;
+    savePendingPurchase({ value: purchaseValue, currency: "EUR" });
+    savePendingCheckout({
+      currency: "EUR",
+      offerName: "intro_50",
+      planType: selectedPlan,
+      price: purchaseValue,
+    });
+    capturePostHogEvent(
+      posthog,
+      "checkout_started",
+      withFlowVersion({
+        currency: "EUR",
+        offer_name: "intro_50",
+        plan_type: selectedPlan,
+        price: purchaseValue,
+      })
+    );
+    trackMetaEvent("InitiateCheckout", {
+      currency: "EUR",
+      value: purchaseValue,
+    });
   };
 
   const scrollToPaymentMethods = () => {
@@ -3178,9 +3149,26 @@ const CustomTrialReminder: React.FC<
             </div>
             
             <div className="onb-payment-methods" ref={paymentMethodsRef}>
-              <button className="onb-checkout-confirm" onClick={startCheckout} disabled={loading}>
-                Commencer ma transformation
-              </button>
+              {preparedCheckout?.clientSecret ? (
+                <>
+                  <StripePaymentForm
+                    clientSecret={preparedCheckout.clientSecret}
+                    onBeforePayment={handleBeforePayment}
+                    onPaymentError={(msg) => setPaymentError(msg)}
+                  />
+                  {paymentError && (
+                    <p style={{ color: "#ff6b6b", marginTop: 8, textAlign: "center", fontSize: 14 }}>
+                      {paymentError}
+                    </p>
+                  )}
+                </>
+              ) : (
+                <p style={{ textAlign: "center", padding: "16px 0", color: "#999", fontSize: 14 }}>
+                  {isCheckoutEmailValid
+                    ? "Préparation du formulaire de paiement..."
+                    : "Entrez votre email pour accéder au paiement"}
+                </p>
+              )}
             </div>
 
           </div>
@@ -3202,8 +3190,8 @@ const CustomTrialReminder: React.FC<
       </div>
 
       <div className="onb-paywall-cta-wrap">
-        <button className="onb-btn-gold onb-trial-btn" onClick={startCheckout} disabled={loading}>
-          {loading ? "Chargement..." : "Commencer maintenant"}
+        <button className="onb-btn-gold onb-trial-btn" onClick={scrollToPaymentMethods}>
+          Commencer maintenant
         </button>
         <p className="onb-paywall-legal">Annulation à tout moment</p>
       </div>
@@ -3253,7 +3241,7 @@ export default function OnboardingFirst5({ onDone, onLoginClick }: Props) {
 
       const promise = (async () => {
         const API_BASE_URL = getApiBaseUrl();
-        const res = await fetch(`${API_BASE_URL}/api/create-checkout-session`, {
+        const res = await fetch(`${API_BASE_URL}/api/create-payment-intent`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -3267,11 +3255,18 @@ export default function OnboardingFirst5({ onDone, onLoginClick }: Props) {
         });
 
         const data = await res.json();
-        if (!res.ok || !data?.url) {
+        if (!res.ok || !data?.client_secret) {
           throw new Error(data?.error || "Erreur checkout");
         }
 
-        const prepared = { key, url: data.url, email: normalizedEmail, plan, offer };
+        const prepared: PreparedCheckout = {
+          key,
+          clientSecret: data.client_secret,
+          subscriptionId: data.subscription_id,
+          email: normalizedEmail,
+          plan,
+          offer,
+        };
         setPreparedCheckout(prepared);
         return prepared;
       })().catch((err) => {
