@@ -2894,6 +2894,7 @@ const CustomTrialReminder: React.FC<
   const posthog = usePostHog();
   const OFFER_TIMER_SECONDS_50 = 10 * 60;
   const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [secondsLeft, setSecondsLeft] = useState(OFFER_TIMER_SECONDS_50);
   const [selectedPlan, setSelectedPlan] = useState<CheckoutPlan>("year");
   const promoCode = useMemo(() => buildPromoCode(answers.personalData?.firstName, "50"), [answers.personalData?.firstName]);
@@ -2938,20 +2939,26 @@ const CustomTrialReminder: React.FC<
       clearPreparedCheckout();
     }
     if (isCheckoutEmailValid) {
+      setCheckoutError(null);
       void prepareCheckout({
         email: normalizedCheckoutEmail,
         plan,
         offer: offerLevel,
-      }).catch(() => {});
+      }).catch((err: unknown) => {
+        setCheckoutError(err instanceof Error ? err.message : "Erreur lors de la préparation du paiement");
+      });
     }
   };
 
   useEffect(() => {
     if (isCheckoutEmailValid && !preparedCheckout) {
-      void prepareCheckout({ email: normalizedCheckoutEmail, plan: selectedPlan, offer: offerLevel }).catch(() => {});
+      setCheckoutError(null);
+      void prepareCheckout({ email: normalizedCheckoutEmail, plan: selectedPlan, offer: offerLevel })
+        .catch((err: unknown) => {
+          setCheckoutError(err instanceof Error ? err.message : "Erreur lors de la préparation du paiement");
+        });
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isCheckoutEmailValid, normalizedCheckoutEmail, selectedPlan, preparedCheckout, prepareCheckout, offerLevel]);
 
   const handleBeforePayment = () => {
     const purchaseValue = selectedPlan === "month" ? 9.99 : 29.99;
@@ -3005,53 +3012,85 @@ const CustomTrialReminder: React.FC<
 
       <div className="onb-trial-main" ref={trialMainRef}>
         <section className="onb-paywall-timer-wrap">
-          <p className="onb-paywall-timer-kicker">Offre -{offerLevel}% expirera dans</p>
           <div className="onb-paywall-timer-row">
-            <div className="onb-paywall-timer">
-              <span>{minutes}</span>:<span>{seconds}</span>
+            <div className="onb-paywall-timer-block">
+              <div className="onb-paywall-timer">
+                <span>{minutes}</span>:<span>{seconds}</span>
+              </div>
+              <div className="onb-paywall-timer-sublabel">minutes&nbsp;&nbsp;&nbsp;secondes</div>
             </div>
             <button type="button" className="onb-paywall-timer-cta" onClick={scrollToPaymentMethods}>
-              Obtenir mon plan
+              ACTIVER MON PLAN SOBRE
             </button>
           </div>
         </section>
 
-        <section className="onb-paywall-hero">
-          <div className="onb-paywall-hero-badge">Transformation claire</div>
-          <h2>Ton plan SOBRE personnalisé</h2>
-          <p>Un système concret pour reprendre le contrôle jour après jour.</p>
-          <div className="onb-paywall-compare">
-            <article className="onb-paywall-compare-card is-before">
-              <span className="onb-paywall-compare-tag">Avant</span>
-              <h3>Sans SOBRE</h3>
-              <img
-                className="onb-paywall-compare-visual"
-                src="https://i.imgur.com/fBgv5QO.png"
-                alt="Avant: état actuel sans Sobre"
-                loading="lazy"
-              />
-              <ul>
-                <li>Motivation instable</li>
-                <li>Envies difficiles à gérer</li>
-                <li>Progrès irréguliers</li>
-              </ul>
-            </article>
-            <article className="onb-paywall-compare-card is-after">
-              <span className="onb-paywall-compare-tag">Après</span>
-              <h3>Avec SOBRE</h3>
-              <img
-                className="onb-paywall-compare-visual"
-                src="https://i.imgur.com/jf9Uaiz.png"
-                alt="Après: progression avec Sobre"
-                loading="lazy"
-              />
-              <ul>
-                <li>Routines solides</li>
-                <li>Plan simple à suivre</li>
-                <li>Progression claire et mesurable</li>
-              </ul>
-            </article>
+        <section className="onb-compare-betterme">
+          <div className="onb-compare-tabs">
+            <span className="onb-compare-tab">Maintenant</span>
+            <div className="onb-compare-tab-sep" />
+            <span className="onb-compare-tab">Objectif</span>
           </div>
+          <div className="onb-compare-visuals">
+            <div className="onb-compare-col">
+              <img
+                className="onb-compare-brain"
+                src="https://i.imgur.com/fBgv5QO.png"
+                alt="État actuel sans Sobre"
+                loading="lazy"
+              />
+            </div>
+            <div className="onb-compare-arrow">›</div>
+            <div className="onb-compare-col">
+              <img
+                className="onb-compare-brain"
+                src="https://i.imgur.com/jf9Uaiz.png"
+                alt="Objectif avec Sobre"
+                loading="lazy"
+              />
+            </div>
+          </div>
+          <div className="onb-compare-metrics">
+            {([
+              { label: "Clarté mentale",         before: "Faible",      after: "Élevée" },
+              { label: "Contrôle des envies",    before: "Instable",    after: "Maîtrisé" },
+              { label: "Discipline quotidienne", before: "Irrégulière", after: "Solide" },
+              { label: "Temps sans rechute",     before: "0–2 jours",   after: "30+ jours" },
+            ] as const).map(({ label, before, after }) => (
+              <div key={label} className="onb-compare-metric-row">
+                <div className="onb-compare-metric-cell">
+                  <span className="onb-metric-label">{label}</span>
+                  <span className="onb-metric-value">{before}</span>
+                  <div className="onb-metric-bar">
+                    <div className="onb-metric-seg is-on" />
+                    <div className="onb-metric-seg" />
+                    <div className="onb-metric-seg" />
+                    <div className="onb-metric-seg" />
+                  </div>
+                </div>
+                <div className="onb-compare-metric-cell is-after">
+                  <span className="onb-metric-label">{label}</span>
+                  <span className="onb-metric-value">{after}</span>
+                  <div className="onb-metric-bar">
+                    <div className="onb-metric-seg is-on" />
+                    <div className="onb-metric-seg is-on" />
+                    <div className="onb-metric-seg is-on" />
+                    <div className="onb-metric-seg is-on" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="onb-paywall-intro">
+          <h2>Ton plan SOBRE personnalisé est prêt</h2>
+          <p>Un système concret pour reprendre le contrôle jour après jour.</p>
+          <ul className="onb-quick-benefits">
+            <li>Clarté mentale en quelques jours</li>
+            <li>Routine stable en 2 semaines</li>
+            <li>Transformation durable en 30 jours</li>
+          </ul>
         </section>
 
         <section className="onb-paywall-list">
@@ -3162,6 +3201,10 @@ const CustomTrialReminder: React.FC<
                     </p>
                   )}
                 </>
+              ) : checkoutError ? (
+                <p style={{ textAlign: "center", padding: "16px 0", color: "#ff6b6b", fontSize: 14 }}>
+                  {checkoutError}
+                </p>
               ) : (
                 <p style={{ textAlign: "center", padding: "16px 0", color: "#999", fontSize: 14 }}>
                   {isCheckoutEmailValid
@@ -3241,6 +3284,14 @@ export default function OnboardingFirst5({ onDone, onLoginClick }: Props) {
 
       const promise = (async () => {
         const API_BASE_URL = getApiBaseUrl();
+        console.log("[prepareCheckout] payload:", {
+          email: normalizedEmail,
+          plan,
+          offer,
+          userId: identity.userId || "(empty)",
+          userIdTs: identity.userIdTs || "(empty)",
+          userIdSig: identity.userIdSig || "(empty)",
+        });
         const res = await fetch(`${API_BASE_URL}/api/create-payment-intent`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -3269,7 +3320,8 @@ export default function OnboardingFirst5({ onDone, onLoginClick }: Props) {
         };
         setPreparedCheckout(prepared);
         return prepared;
-      })().catch((err) => {
+      })().catch((err: unknown) => {
+        console.error("[prepareCheckout] failed:", err);
         if (prepareKeyRef.current === key) {
           setPreparedCheckout(null);
           preparePromiseRef.current = null;

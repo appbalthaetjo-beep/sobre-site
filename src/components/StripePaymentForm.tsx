@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { loadStripe } from "@stripe/stripe-js";
+import { loadStripe, type StripeElementsOptions } from "@stripe/stripe-js";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 
 const stripePromise = loadStripe(
   (import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as string) || ""
 );
 
-const ELEMENTS_APPEARANCE: Parameters<typeof Elements>[0]["options"]["appearance"] = {
+const ELEMENTS_APPEARANCE: StripeElementsOptions["appearance"] = {
   theme: "night",
   variables: {
     colorPrimary: "#facc15",
@@ -32,39 +32,52 @@ function PaymentFormInner({ onBeforePayment, onPaymentError }: InnerProps) {
   const stripe = useStripe();
   const elements = useElements();
   const [submitting, setSubmitting] = useState(false);
+  const [elementReady, setElementReady] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!stripe || !elements || submitting) return;
+    if (!stripe || !elements || !elementReady || submitting) return;
 
     onBeforePayment?.();
     setSubmitting(true);
 
     const returnUrl = `${window.location.origin}/success`;
 
-    const { error, paymentIntent } = await stripe.confirmPayment({
-      elements,
-      confirmParams: { return_url: returnUrl },
-      redirect: "if_required",
-    });
+    try {
+      const { error, paymentIntent } = await stripe.confirmPayment({
+        elements,
+        confirmParams: { return_url: returnUrl },
+        redirect: "if_required",
+      });
 
-    if (error) {
+      if (error) {
+        setSubmitting(false);
+        onPaymentError?.(error.message || "Erreur de paiement");
+        return;
+      }
+
+      if (paymentIntent?.status === "succeeded") {
+        window.location.href = `${returnUrl}?payment_intent=${paymentIntent.id}`;
+        return;
+      }
+
+      // Unexpected status (e.g. "requires_action", "processing", undefined)
       setSubmitting(false);
-      onPaymentError?.(error.message || "Erreur de paiement");
-      return;
-    }
-
-    if (paymentIntent?.status === "succeeded") {
-      window.location.href = `${returnUrl}?payment_intent=${paymentIntent.id}`;
+      onPaymentError?.("Statut de paiement inattendu. Veuillez réessayer.");
+    } catch (err) {
+      setSubmitting(false);
+      onPaymentError?.(err instanceof Error ? err.message : "Erreur de paiement inattendue");
     }
   };
 
+  const canSubmit = !!stripe && !!elements && elementReady && !submitting;
+
   return (
     <form onSubmit={handleSubmit}>
-      <PaymentElement />
+      <PaymentElement onReady={() => setElementReady(true)} />
       <button
         type="submit"
-        disabled={!stripe || !elements || submitting}
+        disabled={!canSubmit}
         style={{
           marginTop: 16,
           width: "100%",
@@ -72,15 +85,15 @@ function PaymentFormInner({ onBeforePayment, onPaymentError }: InnerProps) {
           padding: "14px 16px",
           borderRadius: 12,
           border: "none",
-          background: submitting ? "#555" : "#facc15",
-          color: submitting ? "#ccc" : "#000",
+          background: submitting ? "#555" : !elementReady ? "#888" : "#facc15",
+          color: submitting || !elementReady ? "#ccc" : "#000",
           fontWeight: 700,
           fontSize: 16,
-          cursor: submitting ? "not-allowed" : "pointer",
+          cursor: !canSubmit ? "not-allowed" : "pointer",
           transition: "background 0.2s",
         }}
       >
-        {submitting ? "Traitement en cours..." : "Activer l'abonnement"}
+        {submitting ? "Traitement en cours..." : !elementReady ? "Chargement..." : "Activer l'abonnement"}
       </button>
     </form>
   );
