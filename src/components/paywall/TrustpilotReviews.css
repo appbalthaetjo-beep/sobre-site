@@ -1,0 +1,245 @@
+/* ── TrustpilotReviews ───────────────────────────────────── */
+
+.tpr-wrap {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.tpr-wrap--visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.tpr-wrap--visible .tpr-review {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ── Trustpilot logo + badge row ── */
+.tpr-badge-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.tpr-logo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.tpr-logo-star {
+  width: 22px;
+  height: 22px;
+  fill: #00b67a;
+}
+
+.tpr-logo-word {
+  color: #00b67a;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: -0.2px;
+}
+
+.tpr-badge-sep {
+  width: 1px;
+  height: 22px;
+  background: rgba(255, 255, 255, 0.12);
+  flex-shrink: 0;
+}
+
+.tpr-badge-score {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tpr-badge-label {
+  color: rgba(243, 235, 221, 0.6);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.tpr-badge-label strong {
+  color: #F3EBDD;
+  font-weight: 700;
+}
+
+/* ── Trustpilot rating image ── */
+.tpr-rating-img {
+  height: 22px;
+  width: auto;
+  display: block;
+  flex-shrink: 0;
+}
+
+/* ── Header de chaque avis : rating gauche, prénom droite ── */
+.tpr-review-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.tpr-review-name {
+  color: #F3EBDD;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.tpr-review-meta {
+  color: rgba(243, 235, 221, 0.4);
+  font-size: 11px;
+}
+
+.tpr-pierre-meta {
+  color: rgba(243, 235, 221, 0.4);
+  font-size: 11px;
+}
+
+/* ── Stars (badge section header) ── */
+.tpr-stars {
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.tpr-star {
+  fill: #facc15;
+  display: block;
+}
+
+/* ── Social proof image ── */
+.tpr-social-img {
+  width: 100%;
+  border-radius: 14px;
+  display: block;
+}
+
+/* ── Header text ── */
+.tpr-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tpr-title {
+  color: #F3EBDD;
+  font-size: 22px;
+  font-weight: 800;
+  margin: 0;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.tpr-sub {
+  color: rgba(243, 235, 221, 0.45);
+  font-size: 13px;
+  text-align: center;
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* ── Pierre featured testimonial ── */
+.tpr-pierre {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  padding: 18px 0;
+}
+
+.tpr-pierre-quote {
+  color: rgba(243, 235, 221, 0.9);
+  font-size: 14px;
+  line-height: 1.6;
+  font-style: italic;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.tpr-pierre-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tpr-pierre-meta {
+  color: rgba(243, 235, 221, 0.4);
+  font-size: 11px;
+}
+
+/* ── Reviews row : flat, no card ── */
+.tpr-reviews-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  width: 100%;
+}
+
+.tpr-review {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+.tpr-review:last-child {
+  border-bottom: none;
+}
+
+.tpr-review-quote {
+  color: rgba(243, 235, 221, 0.88);
+  font-size: 14px;
+  line-height: 1.55;
+  font-style: italic;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+/* ── Author footer ── */
+.tpr-review-author {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+
+/* ── Desktop : Thomas & Mehdi côte à côte ── */
+@media (min-width: 640px) {
+  .tpr-reviews-row {
+    flex-direction: row;
+    gap: 0;
+  }
+
+  .tpr-review {
+    flex: 1;
+    padding: 0 20px;
+    border-bottom: none;
+    border-right: 1px solid rgba(255, 255, 255, 0.07);
+  }
+
+  .tpr-review:first-child {
+    padding-left: 0;
+  }
+
+  .tpr-review:last-child {
+    padding-right: 0;
+    border-right: none;
+  }
+}
