@@ -290,6 +290,7 @@ app.post("/api/create-payment-intent", async (req, res) => {
     }
 
     const priceId = getPriceId({ plan, offer });
+    console.log("[create-payment-intent] plan:", plan, "offer:", offer, "priceId:", priceId);
     if (!priceId) return res.status(400).json({ error: "Price ID introuvable" });
 
     const existingCustomers = await stripe.customers.list({ email: normalizedEmail, limit: 1 });

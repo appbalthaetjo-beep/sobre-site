@@ -3008,7 +3008,7 @@ const CustomTrialReminder: React.FC<
     }
 
     setIsPreparingCheckout(true);
-    console.log("[handleActivate] plan envoyé:", selectedPlan, "| offer:", offerLevel);
+    console.log("[handleActivate] selectedPlan:", selectedPlan, "offer:", offerLevel);
     void prepareCheckout({ email: normalizedCheckoutEmail, plan: selectedPlan, offer: offerLevel })
       .catch((err: unknown) => {
         setCheckoutError(err instanceof Error ? err.message : "Erreur lors de la préparation du paiement");
