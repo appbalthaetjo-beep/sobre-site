@@ -132,13 +132,12 @@ async function getOrCreateSupabaseUserByEmail(email) {
 }
 
 function getPriceId({ plan, offer }) {
-  // "week" (essai 7 jours) est facturé via le price mensuel avec une config trial côté Stripe.
-  // On garde un seul set de price IDs côté serveur.
-  if (plan === "week") plan = "month";
+  if (plan === "week"  && offer === "50") return process.env.PRICE_MONTH_50;
+  if (plan === "week"  && offer === "60") return process.env.PRICE_MONTH_60;
   if (plan === "month" && offer === "50") return process.env.PRICE_MONTH_50;
   if (plan === "month" && offer === "60") return process.env.PRICE_MONTH_60;
-  if (plan === "year" && offer === "50") return process.env.PRICE_YEAR_50;
-  if (plan === "year" && offer === "60") return process.env.PRICE_YEAR_60;
+  if (plan === "year"  && offer === "50") return process.env.PRICE_YEAR_50;
+  if (plan === "year"  && offer === "60") return process.env.PRICE_YEAR_60;
   return null;
 }
 
@@ -302,14 +301,26 @@ app.post("/api/create-payment-intent", async (req, res) => {
             metadata: { app_user_id: appUserId, auth_email: normalizedEmail },
           });
 
+    if (plan === "week") {
+      // Add a 6,99€ one-time fee as a pending invoice item.
+      // Stripe bundles pending items into the first invoice of the subscription,
+      // so the customer pays 6,99€ now and is auto-billed monthly after the trial.
+      await stripe.invoiceItems.create({
+        customer: stripeCustomer.id,
+        amount: 699,
+        currency: "eur",
+        description: "Essai 7 jours SOBRE",
+        metadata: { plan, offer, app_user_id: appUserId },
+      });
+    }
+
     const subscription = await stripe.subscriptions.create({
       customer: stripeCustomer.id,
       items: [{ price: priceId }],
+      ...(plan === "week" ? { trial_period_days: 7 } : {}),
       payment_behavior: "default_incomplete",
       payment_settings: { save_default_payment_method: "on_subscription" },
       expand: ["latest_invoice.payment_intent"],
-      // app_user_id est dans subscription.metadata — les webhooks doivent lire ici,
-      // en expandant subscription depuis l'invoice (invoice.subscription).
       metadata: { app_user_id: appUserId, auth_email: normalizedEmail, plan, offer },
     });
 
