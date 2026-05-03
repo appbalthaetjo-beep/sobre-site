@@ -7,6 +7,8 @@ import { getCheckoutIdentityError, readFunnelIdentityFromSearch } from "../lib/f
 import { savePendingPurchase, trackMetaEvent, trackMetaEventOnce } from "../lib/metaPixel";
 import { capturePostHogEvent, capturePostHogEventOnce, savePendingCheckout } from "../lib/posthog";
 import { StripePaymentForm } from "../components/StripePaymentForm";
+import AppPreviewCarousel from "../components/AppPreviewCarousel";
+import TrustpilotReviews from "../components/paywall/TrustpilotReviews";
 type StepId =
   | "index"
   | "story"
@@ -462,9 +464,9 @@ const CustomWelcomeIntro: React.FC<
 const CustomStory: React.FC<CustomProps> = ({ goNext }) => {
   const { displayedText, finished, tapToContinue } = useTypewriterMessages(
     [
-      "La plupart des personnes qui essaient d’arrêter le porno 🌽 n’échouent pas parce qu’elles sont faibles.",
-      "Elles échouent parce qu’elles ne comprennent pas vraiment leurs habitudes ni ce qui déclenche leurs envies.",
-      "Nous allons t’aider à comprendre ça.",
+      "La plupart des personnes qui essaient d'arrêter le porno 🌽 n'échouent pas parce qu'elles sont faibles.",
+      "Elles échouent parce qu'elles ne comprennent pas vraiment leurs habitudes ni ce qui déclenche leurs envies.",
+      "Nous allons t'aider à comprendre ça.",
       "Commençons par voir si tu as vraiment un problème avec le porno.",
     ],
     45,
@@ -1116,16 +1118,16 @@ const CustomQuestion13: React.FC<CustomProps> = ({ goNext, goBack, answers, setA
         transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
       >
         <div className="onb-question-content">
-          <h2 className="onb-title-lg">Avez-vous remarqué l’un de ces effets récemment ?</h2>
+          <h2 className="onb-title-lg">Avez-vous remarqué l'un de ces effets récemment ?</h2>
 
           <div className="onb-q13-details">
             <p>🧠 Brouillard mental persistant (difficile de se concentrer)</p>
-            <p>💔 Problèmes de confiance ou d’estime de soi</p>
+            <p>💔 Problèmes de confiance ou d'estime de soi</p>
             <p>😰 Anxiété sociale en hausse</p>
             <p>🚀 Manque de motivation pour commencer ou terminer des tâches</p>
             <p>🎯 Difficultés de concentration</p>
-            <p>💞 Perte d’intérêt pour l’intimité</p>
-            <p>⚠️ Difficultés d’érection</p>
+            <p>💞 Perte d'intérêt pour l'intimité</p>
+            <p>⚠️ Difficultés d'érection</p>
           </div>
 
           <div className="onb-choice-list">
@@ -1304,9 +1306,9 @@ const CustomSymptoms: React.FC<CustomProps> = ({ goNext, goBack, answers, setAns
       title: "Mental",
       symptoms: [
         { id: "demotivated", label: "😞 Se sentir démotivé" },
-        { id: "lack_ambition", label: "🎯 Manque d’ambition pour poursuivre des objectifs" },
+        { id: "lack_ambition", label: "🎯 Manque d'ambition pour poursuivre des objectifs" },
         { id: "concentration", label: "🧠 Difficulté à se concentrer" },
-        { id: "memory", label: "🌫️ Mauvaise mémoire / “brouillard mental”" },
+        { id: "memory", label: "🌫️ Mauvaise mémoire / brouillard mental" },
         { id: "anxiety", label: "😰 Anxiété générale" },
       ],
     },
@@ -1322,7 +1324,7 @@ const CustomSymptoms: React.FC<CustomProps> = ({ goNext, goBack, answers, setAns
       title: "Social",
       symptoms: [
         { id: "low_confidence", label: "💔 Faible confiance en soi" },
-        { id: "unattractive", label: "🪞 Se sentir peu attirant ou indigne d’amour" },
+        { id: "unattractive", label: "🪞 Se sentir peu attirant ou indigne d'amour" },
         { id: "unsatisfying_sex", label: "🫥 Rapports sexuels insatisfaisants ou sans plaisir" },
         { id: "reduced_socializing", label: "🧍 Désir réduit de socialiser" },
         { id: "isolated", label: "🌫️ Se sentir isolé des autres" },
@@ -1401,8 +1403,8 @@ const CustomSlide3: React.FC<CustomProps> = ({ goNext }) => {
     { side: "left", text: "POURQUOI PORNHUB EST DANS TON HISTORIQUE ?!?" },
     { side: "left", text: "TU ME TROMPES ?!?!" },
     { side: "left", text: "JE NE SUIS PAS ASSEZ BIEN POUR TOI ?" },
-    { side: "right", text: "BÉBÉ, CE N’EST PAS CE QUE TU CROIS…" },
-    { side: "right", text: "C’EST FINI. VA TE METTRE EN COUPLE AVEC UNE PORNSTAR." },
+    { side: "right", text: "BÉBÉ, CE N'EST PAS CE QUE TU CROIS…" },
+    { side: "right", text: "C'EST FINI. VA TE METTRE EN COUPLE AVEC UNE PORNSTAR." },
   ] as const;
 
   return (
@@ -1432,8 +1434,8 @@ const CustomSlide3: React.FC<CustomProps> = ({ goNext }) => {
       <div className="onb-slide-copy">
         <h2 className="onb-slide-title">Le porno détruit les relations.</h2>
         <p className="onb-slide-message">
-          Regarder du porno peut entraîner des difficultés d’érection, une baisse de libido et une perte
-          d’attirance envers les autres.
+          Regarder du porno peut entraîner des difficultés d'érection, une baisse de libido et une perte
+          d'attirance envers les autres.
         </p>
       </div>
 
@@ -1491,7 +1493,7 @@ const CustomSlide2: React.FC<CustomProps> = ({ goNext }) => {
 
         <h2 className="onb-slide-title">La pornographie brise le désir</h2>
         <p className="onb-slide-message">
-          Plus de 50 % des personnes dépendantes au porno ont signalé une perte d’intérêt pour le vrai sexe.
+          Plus de 50 % des personnes dépendantes au porno ont signalé une perte d'intérêt pour le vrai sexe.
         </p>
       </div>
 
@@ -1608,7 +1610,7 @@ const CustomSlide7: React.FC<CustomProps> = ({ goNext }) => {
       <div className="onb-slide-copy">
         <h2 className="onb-slide-title">Réussissons ensemble</h2>
         <p className="onb-slide-message">
-          Vous n’êtes pas seul. Rejoignez une communauté grandissante de plus de 10 000 membres sur le même chemin,
+          Vous n'êtes pas seul. Rejoignez une communauté grandissante de plus de 10 000 membres sur le même chemin,
           qui se soutiennent et se motivent à chaque étape.
         </p>
       </div>
@@ -1775,7 +1777,7 @@ const CustomSlide9: React.FC<CustomProps> = ({ goNext }) => {
           déclencheurs
         </h2>
         <p className="onb-slide-message">
-          Réduisez vos tentations en limitant le temps d’écran sur les applications qui vous déclenchent.
+          Réduisez vos tentations en limitant le temps d'écran sur les applications qui vous déclenchent.
         </p>
       </div>
 
@@ -1868,8 +1870,8 @@ const CustomSlide11: React.FC<CustomProps> = ({ goNext }) => (
     <div className="onb-slide-copy onb-slide11-copy">
       <h2 className="onb-slide-title">Support personnalisé</h2>
       <p className="onb-slide-message">
-        Ton assistant IA t’aide au quotidien avec des check-ins, des rappels et des conseils adaptés — pour avancer,
-        même quand c’est dur.
+        Ton assistant IA t'aide au quotidien avec des check-ins, des rappels et des conseils adaptés — pour avancer,
+        même quand c'est dur.
       </p>
     </div>
 
@@ -1920,7 +1922,7 @@ const CustomTestimonials: React.FC<CustomProps> = ({ goNext }) => {
     {
       name: "Anonyme",
       image: null,
-      text: "La vie a retrouvé ses couleurs, et je suis enthousiaste pour l’avenir.",
+      text: "La vie a retrouvé ses couleurs, et je suis enthousiaste pour l'avenir.",
       initial: "A",
     },
     {
@@ -1964,14 +1966,14 @@ const CustomPastAttempts: React.FC<CustomProps> = (p) => (
     {...p}
     progressCurrent={1}
     progressTotal={1}
-    title={"As-tu déjà essayé d’arrêter le porno ?\nComment ça s’est passé ?"}
+    title={"As-tu déjà essayé d'arrêter le porno ?\nComment ça s'est passé ?"}
     questionKey="past_porn_change_attempt"
     showSkip={false}
     choices={[
-      { id: "yes_easy", label: "🙂 Oui, et ce n’était pas difficile" },
-      { id: "yes_somewhat", label: "😓 Oui, mais c’était un peu difficile" },
-      { id: "yes_very", label: "😣 Oui, et c’était très difficile" },
-      { id: "no_first_time", label: "🆕 Non, c’est la première fois" },
+      { id: "yes_easy", label: "🙂 Oui, et ce n'était pas difficile" },
+      { id: "yes_somewhat", label: "😓 Oui, mais c'était un peu difficile" },
+      { id: "yes_very", label: "😣 Oui, et c'était très difficile" },
+      { id: "no_first_time", label: "🆕 Non, c'est la première fois" },
     ]}
   />
 );
@@ -1993,9 +1995,9 @@ const CustomPersonalGoals: React.FC<CustomProps> = ({ goNext, goBack, answers, s
   const goals = [
     { id: "stop_completely", title: "🛑 Arrêter complètement" },
     { id: "improve_relationships", title: "❤️ Améliorer mes relations" },
-    { id: "regain_energy", title: "⚡ Retrouver de l’énergie / de la motivation" },
+    { id: "regain_energy", title: "⚡ Retrouver de l'énergie / de la motivation" },
     { id: "mental_clarity", title: "🧠 Améliorer ma clarté mentale" },
-    { id: "reduce_anxiety", title: "🕊️ Réduire l’anxiété / retrouver la paix intérieure" },
+    { id: "reduce_anxiety", title: "🕊️ Réduire l'anxiété / retrouver la paix intérieure" },
   ];
   const [selected, setSelected] = useState<string[]>(answers.userGoals ?? []);
 
@@ -2021,7 +2023,7 @@ const CustomPersonalGoals: React.FC<CustomProps> = ({ goNext, goBack, answers, s
 
       <div className="onb-sym-content">
         <h2 className="onb-title-lg">Définissons tes objectifs</h2>
-        <p className="onb-helper">Sélectionne tout ce qui s’applique.</p>
+        <p className="onb-helper">Sélectionne tout ce qui s'applique.</p>
 
         <div className="onb-goals-list">
           {goals.map((g) => (
@@ -2165,22 +2167,22 @@ const CustomRateUs: React.FC<CustomProps> = ({ goNext }) => {
     {
       date: "29 janv.",
       name: "Derek",
-      text: "Je reprends le contrôle. C’est simple et ça m’aide vraiment.",
+      text: "Je reprends le contrôle. C'est simple et ça m'aide vraiment.",
     },
     {
       date: "2 fév.",
       name: "Alex",
-      text: "J’ai enfin de la clarté mentale et je suis plus motivé.",
+      text: "J'ai enfin de la clarté mentale et je suis plus motivé.",
     },
     {
       date: "6 juin",
       name: "Thomas",
-      text: "Le diagnostic m’a fait un déclic. Je sais quoi faire maintenant.",
+      text: "Le diagnostic m'a fait un déclic. Je sais quoi faire maintenant.",
     },
     {
       date: "18 août",
       name: "Nolan",
-      text: "Les rappels et le suivi m’aident à rester constant.",
+      text: "Les rappels et le suivi m'aident à rester constant.",
     },
     {
       date: "12 oct.",
@@ -2233,7 +2235,7 @@ const CustomRateUs: React.FC<CustomProps> = ({ goNext }) => {
           <br />
           porno
         </h2>
-        <p>Chaque note nous aide à lutter contre l’industrie du porno et à aider plus de personnes.</p>
+        <p>Chaque note nous aide à lutter contre l'industrie du porno et à aider plus de personnes.</p>
         <div className="onb-rate-stars">★★★★★</div>
         <div className="onb-rate-kicker">Plus de 300 avis 5 étoiles</div>
         <div className="onb-rate-avatars">
@@ -2254,7 +2256,7 @@ const CustomRateUs: React.FC<CustomProps> = ({ goNext }) => {
                   <span>★★★★★</span>
                 </div>
                 <h4>{r.name}</h4>
-                <p>“{r.text}”</p>
+                <p>"{r.text}"</p>
               </article>
             ))}
           </div>
@@ -2269,7 +2271,7 @@ const CustomRateUs: React.FC<CustomProps> = ({ goNext }) => {
                   <span>★★★★★</span>
                 </div>
                 <h4>{r.name}</h4>
-                <p>“{r.text}”</p>
+                <p>"{r.text}"</p>
               </article>
             ))}
           </div>
@@ -2283,13 +2285,13 @@ const CustomRateUs: React.FC<CustomProps> = ({ goNext }) => {
   );
 };
 
-const CustomFreeTrial: React.FC<CustomProps & { checkoutEmail: string }> = ({ goBack, goNext, answers, checkoutEmail }) => {
+const CustomFreeTrial: React.FC<CustomProps> = ({ goBack, goNext, answers }) => {
   const [phase, setPhase] = useState<"scratch" | "reveal">("scratch");
   const [isScratching, setIsScratching] = useState(false);
   const [scratchProgress, setScratchProgress] = useState(0);
   const [isRevealing, setIsRevealing] = useState(false);
   const [isDrawing, setIsDrawing] = useState(false);
-  const scratchHostRef = useRef<HTMLDivElement | null>(null);
+  const scratchHostRef = useRef<HTMLButtonElement | null>(null);
   const scratchCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const lastPointRef = useRef<{ x: number; y: number } | null>(null);
   const scratchedCellsRef = useRef<Uint8Array | null>(null);
@@ -2490,7 +2492,7 @@ const CustomFreeTrial: React.FC<CustomProps & { checkoutEmail: string }> = ({ go
             <br />
             et découvre ton offre
           </h2>
-          <p className="onb-offer-subtitle">Une réduction exclusive t’attend pour démarrer maintenant.</p>
+          <p className="onb-offer-subtitle">Une réduction exclusive t'attend pour démarrer maintenant.</p>
 
           <button
             className={`onb-offer-scratch ${isScratching ? "is-scratching" : ""} ${isRevealing ? "is-revealing" : ""}`}
@@ -2589,13 +2591,13 @@ const CustomPersonalizedSummary: React.FC<CustomProps> = ({ goNext, answers }) =
     },
     {
       icon: "🔥",
-      title: "Jour 3 — Renforcer ton “pourquoi”",
+      title: "Jour 3 — Renforcer ton 'pourquoi'",
       description: "Transforme tes raisons profondes en motivation quotidienne et en focus.",
     },
     {
       icon: "🧹",
       title: "Jour 4 — Écraser les symptômes",
-      description: "Apprends à gérer la fatigue, le stress ou l'irritabilité avec des “resets” simples.",
+      description: "Apprends à gérer la fatigue, le stress ou l'irritabilité avec des 'resets' simples.",
     },
     {
       icon: "✨",
@@ -2718,8 +2720,8 @@ const CustomPersonalizedSummary: React.FC<CustomProps> = ({ goNext, answers }) =
           <strong>{targetDate}</strong>
         </motion.div>
 
-        <p className="onb-summary-lead">Ce n’est pas une question de volonté.</p>
-        <p className="onb-summary-sub">C’est un système qui fonctionne vraiment.</p>
+        <p className="onb-summary-lead">Ce n'est pas une question de volonté.</p>
+        <p className="onb-summary-sub">C'est un système qui fonctionne vraiment.</p>
         <p className="onb-summary-body">
           SOBRE te guide à travers un reset puissant, avec une structure et des outils qui t'aident à progresser,
           même quand c'est difficile.
@@ -2883,7 +2885,6 @@ const CustomTrialReminder: React.FC<
     goToEmailStep: () => void;
   }
 > = ({
-  goBack,
   goToEmailStep,
   answers,
   checkoutEmail,
@@ -2895,6 +2896,7 @@ const CustomTrialReminder: React.FC<
   const OFFER_DURATION_SECS = 10 * 60;
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [isPreparingCheckout, setIsPreparingCheckout] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState<number>(() => {
     try {
       const stored = sessionStorage.getItem("sobre_paywall_timer_start");
@@ -2910,9 +2912,10 @@ const CustomTrialReminder: React.FC<
   });
   const [selectedPlan, setSelectedPlan] = useState<CheckoutPlan>("year");
   const promoCode = useMemo(() => buildPromoCode(answers.personalData?.firstName, "50"), [answers.personalData?.firstName]);
+  const [showInlinePayment, setShowInlinePayment] = useState(false);
   const trialMainRef = useRef<HTMLDivElement | null>(null);
   const pricingSectionRef = useRef<HTMLElement | null>(null);
-  const paymentMethodsRef = useRef<HTMLDivElement | null>(null);
+  const inlinePaymentRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -2948,12 +2951,7 @@ const CustomTrialReminder: React.FC<
   const offerLevel = "50";
   const normalizedCheckoutEmail = checkoutEmail.trim().toLowerCase();
   const isCheckoutEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedCheckoutEmail);
-  const prices =
-    selectedPlan === "week"
-      ? { original: "9,99€",  discounted: "6,99€",  saved: "3,00€"  }
-      : selectedPlan === "month"
-      ? { original: "19,99€", discounted: "12,99€", saved: "7,00€"  }
-      : { original: "79,99€", discounted: "39,99€", saved: "40,00€" };
+
 
   const handlePlanChange = (plan: CheckoutPlan) => {
     if (plan === selectedPlan) return;
@@ -2963,25 +2961,16 @@ const CustomTrialReminder: React.FC<
     }
     if (isCheckoutEmailValid) {
       setCheckoutError(null);
-      void prepareCheckout({
-        email: normalizedCheckoutEmail,
-        plan,
-        offer: offerLevel,
-      }).catch((err: unknown) => {
-        setCheckoutError(err instanceof Error ? err.message : "Erreur lors de la préparation du paiement");
-      });
-    }
-  };
-
-  useEffect(() => {
-    if (isCheckoutEmailValid && !preparedCheckout) {
-      setCheckoutError(null);
-      void prepareCheckout({ email: normalizedCheckoutEmail, plan: selectedPlan, offer: offerLevel })
+      setIsPreparingCheckout(true);
+      void prepareCheckout({ email: normalizedCheckoutEmail, plan, offer: offerLevel })
         .catch((err: unknown) => {
           setCheckoutError(err instanceof Error ? err.message : "Erreur lors de la préparation du paiement");
+        })
+        .finally(() => {
+          setIsPreparingCheckout(false);
         });
     }
-  }, [isCheckoutEmailValid, normalizedCheckoutEmail, selectedPlan, preparedCheckout, prepareCheckout, offerLevel]);
+  };
 
   const handleBeforePayment = () => {
     const purchaseValue = selectedPlan === "month" ? 9.99 : 29.99;
@@ -2989,7 +2978,7 @@ const CustomTrialReminder: React.FC<
     savePendingCheckout({
       currency: "EUR",
       offerName: "intro_50",
-      planType: selectedPlan,
+      planType: selectedPlan === "week" ? "month" : selectedPlan,
       price: purchaseValue,
     });
     capturePostHogEvent(
@@ -3008,21 +2997,30 @@ const CustomTrialReminder: React.FC<
     });
   };
 
-  const scrollToPaymentMethods = () => {
-    const target = paymentMethodsRef.current;
-    if (!target) return;
+  const handleActivate = () => {
+    setShowInlinePayment(true);
+    setPaymentError(null);
+    setCheckoutError(null);
 
-    const container = trialMainRef.current;
-    if (container && container.scrollHeight > container.clientHeight + 4) {
-      const containerRect = container.getBoundingClientRect();
-      const targetRect = target.getBoundingClientRect();
-      const destinationTop = Math.max(0, container.scrollTop + (targetRect.top - containerRect.top) - 10);
-      container.scrollTo({ top: destinationTop, behavior: "smooth" });
+    if (!isCheckoutEmailValid) {
+      goToEmailStep();
       return;
     }
 
-    const targetTop = window.scrollY + target.getBoundingClientRect().top - 10;
-    window.scrollTo({ top: targetTop, behavior: "smooth" });
+    setIsPreparingCheckout(true);
+    void prepareCheckout({ email: normalizedCheckoutEmail, plan: selectedPlan, offer: offerLevel })
+      .catch((err: unknown) => {
+        setCheckoutError(err instanceof Error ? err.message : "Erreur lors de la préparation du paiement");
+      })
+      .finally(() => {
+        setIsPreparingCheckout(false);
+      });
+
+    setTimeout(() => {
+      const el = inlinePaymentRef.current;
+      if (!el) return;
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 150);
   };
 
   return (
@@ -3042,7 +3040,7 @@ const CustomTrialReminder: React.FC<
               </div>
               <div className="onb-paywall-timer-sublabel">minutes&nbsp;&nbsp;&nbsp;secondes</div>
             </div>
-            <button type="button" className="onb-paywall-timer-cta" onClick={scrollToPaymentMethods}>
+            <button type="button" className="onb-paywall-timer-cta" onClick={handleActivate}>
               ACTIVER MON PLAN SOBRE
             </button>
           </div>
@@ -3198,102 +3196,146 @@ const CustomTrialReminder: React.FC<
           </div>
         </section>
 
-        <section className="onb-paywall-proof">
-          <h3>Ils avancent avec SOBRE</h3>
-          <div className="onb-paywall-reviews">
-            <blockquote>
-              <div className="onb-review-stars">★★★★★</div>
-              <p className="onb-review-quote">"En 10 jours j'ai retrouvé de la clarté."</p>
-              <div className="onb-review-meta">— Lucas · 10 jours</div>
-            </blockquote>
-            <blockquote>
-              <div className="onb-review-stars">★★★★★</div>
-              <p className="onb-review-quote">"Le suivi quotidien m'aide vraiment à tenir."</p>
-              <div className="onb-review-meta">— Thomas · 3 semaines</div>
-            </blockquote>
-            <blockquote>
-              <div className="onb-review-stars">★★★★★</div>
-              <p className="onb-review-quote">"Simple, concret, efficace."</p>
-              <div className="onb-review-meta">— Marc · 4 mois</div>
-            </blockquote>
+        {/* ── APERCU APP ── */}
+        <AppPreviewCarousel />
+
+        {/* ── REASSURANCE ── */}
+        <div className="onb-reassurance">
+          <div className="onb-reassurance-item"><span>🔒</span><span>Paiement sécurisé</span></div>
+          <div className="onb-reassurance-item"><span>✂️</span><span>Annulation facile</span></div>
+          <div className="onb-reassurance-item"><span>⚡</span><span>Accès immédiat</span></div>
+          <div className="onb-reassurance-item"><span>🚫</span><span>Sans engagement</span></div>
+        </div>
+
+        {/* ── CE QUI EST INCLUS ── */}
+        <section className="onb-includes">
+          <h3 className="onb-includes-title">Ce qui est inclus dans ton plan</h3>
+          <div className="onb-includes-list">
+            {([
+              { icon: "🔥", label: "Plan Detox 30-60-90",      desc: "Programme structuré jour par jour" },
+              { icon: "🛡️", label: "Blocage des déclencheurs",  desc: "Identifie et neutralise tes envies" },
+              { icon: "💪", label: "Exercices anti-envie",      desc: "Techniques validées par les neurosciences" },
+              { icon: "📊", label: "Suivi quotidien",           desc: "Calendrier, streak et bénéfices chiffrés" },
+              { icon: "👥", label: "Communauté SOBRE",          desc: "Entraide avec des milliers de membres" },
+              { icon: "🧠", label: "Méthode neurosciences",     desc: "Basé sur la plasticité cérébrale" },
+            ] as const).map(({ icon, label, desc }) => (
+              <div key={label} className="onb-includes-item">
+                <span className="onb-includes-icon">{icon}</span>
+                <div className="onb-includes-text">
+                  <strong>{label}</strong>
+                  <span>{desc}</span>
+                </div>
+              </div>
+            ))}
           </div>
         </section>
 
-        <section className="onb-checkout-block">
-          <h3>
-            Rejoins plus de <span>5000 utilisateurs</span>
-            <br />
-            qui reprennent le contrôle avec SOBRE
-          </h3>
+        {/* ── IMAGE SOCIALE ── */}
+        <img
+          src="https://i.imgur.com/cj2xIXf.jpg"
+          alt="Ils avancent avec SOBRE"
+          style={{ width: "100%", borderRadius: "14px", display: "block" }}
+          loading="lazy"
+        />
 
-          <div className="onb-checkout-card">
-            <h4>Paiement sécurisé</h4>
+        {/* ── AVIS TRUSTPILOT ── */}
+        <TrustpilotReviews />
 
-            <div className="onb-checkout-row">
-              <span>SOBRE Premium</span>
-              <strong>{prices.original}</strong>
-            </div>
-            <div className="onb-checkout-row is-discount">
-              <span>Offre d’introduction -{offerLevel}%</span>
-              <strong>-{prices.saved}</strong>
-            </div>
-            <div className="onb-checkout-code">CODE_PROMO : {promoCode}</div>
+        {/* ── BOTTOM PLANS ── */}
+        <section className="onb-bottom-plans-section">
+          <h3 className="onb-bottom-plans-title">Obtenez des résultats visibles en 4 semaines !</h3>
 
-            <div className="onb-checkout-total">
-              <span>Total</span>
-              <strong>{prices.discounted}</strong>
-            </div>
-            
-            <div className="onb-payment-methods" ref={paymentMethodsRef}>
-              {preparedCheckout?.clientSecret ? (
-                <>
-                  <StripePaymentForm
-                    clientSecret={preparedCheckout.clientSecret}
-                    onBeforePayment={handleBeforePayment}
-                    onPaymentError={(msg) => setPaymentError(msg)}
-                  />
-                  {paymentError && (
-                    <p style={{ color: "#ff6b6b", marginTop: 8, textAlign: "center", fontSize: 14 }}>
-                      {paymentError}
-                    </p>
-                  )}
-                </>
-              ) : checkoutError ? (
-                <p style={{ textAlign: "center", padding: "16px 0", color: "#ff6b6b", fontSize: 14 }}>
-                  {checkoutError}
-                </p>
-              ) : (
-                <p style={{ textAlign: "center", padding: "16px 0", color: "#999", fontSize: 14 }}>
-                  {isCheckoutEmailValid
-                    ? "Préparation du formulaire de paiement..."
-                    : "Entrez votre email pour accéder au paiement"}
-                </p>
-              )}
+          <div className="onb-plans">
+
+            <article
+              className={`onb-plan ${selectedPlan === "week" ? "is-selected" : ""}`}
+              onClick={() => handlePlanChange("week")}
+            >
+              <div className={`onb-plan-radio ${selectedPlan === "week" ? "is-on" : ""}`} />
+              <div className="onb-plan-info">
+                <strong>7 jours d&apos;essai</strong>
+                <span className="onb-plan-sublabel">ESSAI 7 JOURS</span>
+                <span className="onb-plan-reduction"><s>9,99 €</s> → 6,99 €</span>
+              </div>
+              <div className="onb-plan-price">
+                <span className="onb-plan-orig">1,43 €</span>
+                <span className="onb-plan-amount">0,99 €</span>
+                <span className="onb-plan-per">par jour</span>
+              </div>
+            </article>
+
+            <div className="onb-plan-featured-wrap">
+              <div className="onb-plan-badge">⭐ LE PLUS POPULAIRE</div>
+              <article
+                className={`onb-plan is-featured ${selectedPlan === "year" ? "is-selected" : ""}`}
+                onClick={() => handlePlanChange("year")}
+              >
+                <div className={`onb-plan-radio ${selectedPlan === "year" ? "is-on" : ""}`} />
+                <div className="onb-plan-info">
+                  <strong>Plan annuel</strong>
+                  <span className="onb-plan-sublabel">PLAN 12 MOIS</span>
+                  <span className="onb-plan-reduction"><s>79,99 €</s> → 39,99 €</span>
+                </div>
+                <div className="onb-plan-price">
+                  <span className="onb-plan-orig">0,22 €</span>
+                  <span className="onb-plan-amount">0,11 €</span>
+                  <span className="onb-plan-per">par jour</span>
+                </div>
+              </article>
             </div>
 
-          </div>
+            <article
+              className={`onb-plan ${selectedPlan === "month" ? "is-selected" : ""}`}
+              onClick={() => handlePlanChange("month")}
+            >
+              <div className={`onb-plan-radio ${selectedPlan === "month" ? "is-on" : ""}`} />
+              <div className="onb-plan-info">
+                <strong>Plan mensuel</strong>
+                <span className="onb-plan-sublabel">PLAN 30 JOURS</span>
+                <span className="onb-plan-reduction"><s>19,99 €</s> → 12,99 €</span>
+              </div>
+              <div className="onb-plan-price">
+                <span className="onb-plan-orig">0,67 €</span>
+                <span className="onb-plan-amount">0,43 €</span>
+                <span className="onb-plan-per">par jour</span>
+              </div>
+            </article>
 
-          <div className="onb-checkout-meta">
-            <p className="onb-checkout-disclaimer">
-              En cliquant sur “Activer l’abonnement”, tu acceptes le renouvellement automatique. Annulation à tout
-              moment depuis les réglages de ton compte.
-            </p>
-            <div className="onb-checkout-trust">✅ Paiement sûr et sécurisé</div>
-            <div className="onb-checkout-brands" aria-label="Moyens de paiement pris en charge">
-              <span>Apple Pay</span>
-              <span>VISA</span>
-              <span>Mastercard</span>
-              <span>AMEX</span>
-            </div>
           </div>
         </section>
+
+        {/* ── FORMULAIRE STRIPE INLINE ── */}
+        {showInlinePayment && (
+          <div ref={inlinePaymentRef} className="onb-inline-payment">
+            {preparedCheckout?.clientSecret ? (
+              <>
+                <StripePaymentForm
+                  clientSecret={preparedCheckout.clientSecret}
+                  onBeforePayment={handleBeforePayment}
+                  onPaymentError={(msg) => setPaymentError(msg)}
+                />
+                {paymentError && (
+                  <p className="onb-inline-payment-error">{paymentError}</p>
+                )}
+              </>
+            ) : checkoutError ? (
+              <p className="onb-inline-payment-error">{checkoutError}</p>
+            ) : isPreparingCheckout ? (
+              <div className="onb-inline-payment-spinner">
+                <div className="onb-spinner" />
+                <p>Préparation du paiement…</p>
+              </div>
+            ) : null}
+          </div>
+        )}
+
       </div>
 
       <div className="onb-paywall-cta-wrap">
-        <button className="onb-btn-cream onb-trial-btn" onClick={scrollToPaymentMethods}>
-          ACTIVER MON PLAN SOBRE
+        <button type="button" className="onb-btn-cream onb-trial-btn" onClick={handleActivate}>
+          Activer mon plan SOBRE
         </button>
-        <p className="onb-paywall-legal">Annulation à tout moment</p>
+        <p className="onb-paywall-legal">Annulation à tout moment · Accès immédiat</p>
       </div>
     </div>
   );
@@ -3324,6 +3366,7 @@ export default function OnboardingFirst5({ onDone, onLoginClick }: Props) {
 
   const prepareCheckout = useCallback(
     async ({ email, plan, offer }: { email: string; plan: CheckoutPlan; offer: string }) => {
+      console.log("[prepareCheckout] called:", { email, plan, offer });
       const normalizedEmail = email.trim().toLowerCase();
       if (!normalizedEmail) throw new Error("email manquant");
 
@@ -3341,6 +3384,15 @@ export default function OnboardingFirst5({ onDone, onLoginClick }: Props) {
 
       const promise = (async () => {
         const API_BASE_URL = getApiBaseUrl();
+        const relativePath = "/api/create-payment-intent";
+        const url = API_BASE_URL
+          ? `${API_BASE_URL}${relativePath}`
+          : relativePath;
+        const devFallbackUrl = `${window.location.protocol}//127.0.0.1:4242${relativePath}`;
+        console.log("[prepareCheckout] fetch url:", url);
+        if (import.meta.env.DEV) {
+          console.log("[prepareCheckout] dev fallback url:", devFallbackUrl);
+        }
         console.log("[prepareCheckout] payload:", {
           email: normalizedEmail,
           plan,
@@ -3349,22 +3401,60 @@ export default function OnboardingFirst5({ onDone, onLoginClick }: Props) {
           userIdTs: identity.userIdTs || "(empty)",
           userIdSig: identity.userIdSig || "(empty)",
         });
-        const res = await fetch(`${API_BASE_URL}/api/create-payment-intent`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            email: normalizedEmail,
-            plan,
-            offer,
-            userId: identity.userId,
-            userIdTs: identity.userIdTs,
-            userIdSig: identity.userIdSig,
-          }),
+        const body = JSON.stringify({
+          email: normalizedEmail,
+          plan,
+          offer,
+          userId: identity.userId,
+          userIdTs: identity.userIdTs,
+          userIdSig: identity.userIdSig,
         });
 
-        const data = await res.json();
-        if (!res.ok || !data?.client_secret) {
-          throw new Error(data?.error || "Erreur checkout");
+        const doFetch = async (targetUrl: string) =>
+          fetch(targetUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body,
+          });
+
+        let res: Response;
+        try {
+          res = await doFetch(url);
+        } catch (err) {
+          // In dev, if the Vite proxy isn't running/working, fall back to the local API port directly.
+          if (import.meta.env.DEV) {
+            console.warn("[prepareCheckout] fetch failed, trying dev fallback:", err);
+            try {
+              res = await doFetch(devFallbackUrl);
+            } catch (fallbackErr) {
+              console.error("[prepareCheckout] dev fallback fetch failed:", fallbackErr);
+              throw new Error(
+                `Fetch failed: impossible de joindre l'API. Vérifie que (1) le backend tourne via 'cd server && npm run dev' sur :4242 et (2) Vite a été redémarré pour activer le proxy (/api). URL testées: ${url} puis ${devFallbackUrl}`
+              );
+            }
+          } else {
+            throw err;
+          }
+        }
+
+        const raw = await res.text();
+        let data: any = null;
+        try {
+          data = raw ? JSON.parse(raw) : null;
+        } catch {
+          data = null;
+        }
+
+        if (!res.ok) {
+          const message =
+            (data && typeof data === "object" && (data.error || data.message)) ||
+            raw ||
+            `Erreur checkout (${res.status})`;
+          throw new Error(message);
+        }
+
+        if (!data?.client_secret) {
+          throw new Error((data && (data.error || data.message)) || "Réponse checkout invalide");
         }
 
         const prepared: PreparedCheckout = {
@@ -3503,12 +3593,9 @@ export default function OnboardingFirst5({ onDone, onLoginClick }: Props) {
     setStepIndex(targetIndex);
   }, [stepIndex]);
 
-  const customComponents: Record<
-    StepId,
-    React.ComponentType<CustomProps>
-  > = useMemo(
+  const customComponents = useMemo(
     () => ({
-      index: (p) => <CustomWelcomeIntro {...p} onLoginClick={onLoginClick} />,
+      index: (p: CustomProps) => <CustomWelcomeIntro {...p} onLoginClick={onLoginClick} />,
       story: CustomStory,
       "personal-data": CustomPersonalData,
       "consider-this": CustomConsiderThis,
@@ -3550,7 +3637,7 @@ export default function OnboardingFirst5({ onDone, onLoginClick }: Props) {
     [onLoginClick]
   );
 
-  const StepComponent = customComponents[step];
+  const StepComponent = (customComponents as Record<StepId, React.ComponentType<CustomProps>>)[step];
 
   return (
     <div className="onb-root">
@@ -3597,7 +3684,6 @@ export default function OnboardingFirst5({ onDone, onLoginClick }: Props) {
               goBack={goBack}
               answers={answers}
               setAnswers={setAnswers}
-              checkoutEmail={checkoutEmail}
             />
           ) : (
             <StepComponent

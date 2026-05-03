@@ -17,15 +17,25 @@ console.log("Stripe key loaded ?", !!process.env.STRIPE_SECRET_KEY);
 
 const app = express();
 const DEFAULT_CLIENT_URL = "http://localhost:5173";
-const allowedOrigins = new Set(
-  [process.env.CLIENT_URL, DEFAULT_CLIENT_URL, "http://127.0.0.1:5173"].filter(Boolean),
-);
+const allowedOrigins = new Set([process.env.CLIENT_URL, DEFAULT_CLIENT_URL, "http://127.0.0.1:5173"].filter(Boolean));
+
+function isDevLocalOrigin(origin) {
+  if (!origin) return false;
+  try {
+    const { hostname } = new URL(origin);
+    return hostname === "localhost" || hostname === "127.0.0.1";
+  } catch {
+    return false;
+  }
+}
 
 app.use(
   cors({
     origin(origin, cb) {
       if (!origin) return cb(null, true);
       if (allowedOrigins.has(origin)) return cb(null, true);
+      // Dev convenience: Vite may pick another port (5174, 5175, ...).
+      if (process.env.NODE_ENV !== "production" && isDevLocalOrigin(origin)) return cb(null, true);
       return cb(new Error(`CORS: origin not allowed: ${origin}`));
     },
   }),
@@ -36,6 +46,20 @@ console.log("index.js loaded");
 
 if (!process.env.STRIPE_SECRET_KEY) {
   console.error("STRIPE_SECRET_KEY manquante dans server/.env");
+  process.exit(1);
+}
+
+if (!process.env.SUPABASE_URL || process.env.SUPABASE_URL.includes("your-project.supabase.co")) {
+  console.error(
+    "SUPABASE_URL invalide. Mets une vraie URL Supabase dans server/.env (pas 'https://your-project.supabase.co')."
+  );
+  process.exit(1);
+}
+
+if (!process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY.includes("your_service_role_key")) {
+  console.error(
+    "SUPABASE_SERVICE_ROLE_KEY invalide. Mets une vraie service role key dans server/.env (pas 'your_service_role_key')."
+  );
   process.exit(1);
 }
 
@@ -108,6 +132,9 @@ async function getOrCreateSupabaseUserByEmail(email) {
 }
 
 function getPriceId({ plan, offer }) {
+  // "week" (essai 7 jours) est facturé via le price mensuel avec une config trial côté Stripe.
+  // On garde un seul set de price IDs côté serveur.
+  if (plan === "week") plan = "month";
   if (plan === "month" && offer === "50") return process.env.PRICE_MONTH_50;
   if (plan === "month" && offer === "60") return process.env.PRICE_MONTH_60;
   if (plan === "year" && offer === "50") return process.env.PRICE_YEAR_50;
@@ -458,9 +485,13 @@ app.get("/api/paypal/subscription", async (req, res) => {
   }
 });
 
+app.get("/api/health", (req, res) => {
+  res.json({ ok: true, time: new Date().toISOString() });
+});
+
 const PORT = process.env.PORT || 4242;
 console.log("BOOT OK - going to listen on", PORT);
 
-app.listen(PORT, () => {
+app.listen(PORT, "0.0.0.0", () => {
   console.log(`Stripe server running on http://localhost:${PORT}`);
 });

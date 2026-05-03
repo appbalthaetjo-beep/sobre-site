@@ -1,11 +1,15 @@
-const API_BASE_URL = String(import.meta.env.VITE_API_BASE_URL || "")
-  .trim()
-  .replace(/\/+$/, "");
-
 export function getApiBaseUrl() {
-  if (!API_BASE_URL) {
-    throw new Error("VITE_API_BASE_URL manquante");
+  const fromEnv = String(import.meta.env.VITE_API_BASE_URL || "")
+    .trim()
+    .replace(/\/+$/, "");
+
+  if (fromEnv) return fromEnv;
+
+  // Fallback: same-origin (works for Vercel/SPA with `/api/*` routes).
+  if (typeof window !== "undefined" && window.location?.origin) {
+    return window.location.origin;
   }
 
-  return API_BASE_URL;
+  // Last resort: relative URLs.
+  return "";
 }
