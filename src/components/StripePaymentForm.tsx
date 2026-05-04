@@ -25,10 +25,11 @@ const ELEMENTS_APPEARANCE: StripeElementsOptions["appearance"] = {
 
 type InnerProps = {
   onBeforePayment?: () => void;
+  onPaymentSuccess?: (paymentIntentId: string) => void;
   onPaymentError?: (msg: string) => void;
 };
 
-function PaymentFormInner({ onBeforePayment, onPaymentError }: InnerProps) {
+function PaymentFormInner({ onBeforePayment, onPaymentSuccess, onPaymentError }: InnerProps) {
   const stripe = useStripe();
   const elements = useElements();
   const [submitting, setSubmitting] = useState(false);
@@ -57,6 +58,7 @@ function PaymentFormInner({ onBeforePayment, onPaymentError }: InnerProps) {
       }
 
       if (paymentIntent?.status === "succeeded") {
+        onPaymentSuccess?.(paymentIntent.id);
         window.location.href = `${returnUrl}?payment_intent=${paymentIntent.id}`;
         return;
       }
@@ -102,6 +104,7 @@ function PaymentFormInner({ onBeforePayment, onPaymentError }: InnerProps) {
 type Props = {
   clientSecret: string;
   onBeforePayment?: () => void;
+  onPaymentSuccess?: (paymentIntentId: string) => void;
   onPaymentError?: (msg: string) => void;
 };
 
@@ -109,7 +112,7 @@ type Props = {
 // automatiquement quand disponible. Prérequis : enregistrer le domaine de production
 // (sobreapp.online) dans Stripe Dashboard → Settings → Payment methods → Apple Pay →
 // Add new domain. Sans ça, Apple Pay ne s'affichera pas sur Safari/iOS.
-export function StripePaymentForm({ clientSecret, onBeforePayment, onPaymentError }: Props) {
+export function StripePaymentForm({ clientSecret, onBeforePayment, onPaymentSuccess, onPaymentError }: Props) {
   if (!clientSecret) return null;
 
   return (
@@ -117,7 +120,11 @@ export function StripePaymentForm({ clientSecret, onBeforePayment, onPaymentErro
       stripe={stripePromise}
       options={{ clientSecret, locale: "fr", appearance: ELEMENTS_APPEARANCE }}
     >
-      <PaymentFormInner onBeforePayment={onBeforePayment} onPaymentError={onPaymentError} />
+      <PaymentFormInner
+        onBeforePayment={onBeforePayment}
+        onPaymentSuccess={onPaymentSuccess}
+        onPaymentError={onPaymentError}
+      />
     </Elements>
   );
 }

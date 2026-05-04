@@ -66,10 +66,19 @@ export default function Success() {
           const eventId = paymentIntentId || sessionId;
           const pendingPurchase = readPendingPurchase();
           const pendingCheckout = readPendingCheckout();
-          trackMetaEventOnce(`Purchase:${eventId}`, "Purchase", {
-            currency: "EUR",
-            value: pendingPurchase?.value ?? 0,
-          });
+          const wasPurchaseTrackedBeforeRedirect =
+            !!paymentIntentId && sessionStorage.getItem(`sobre_meta_purchase_tracked:${paymentIntentId}`) === "1";
+          if (!wasPurchaseTrackedBeforeRedirect) {
+            trackMetaEventOnce(`Purchase:${eventId}`, "Purchase", {
+              content_name: "SOBRE Premium",
+              content_type: "product",
+              currency: "EUR",
+              value: pendingPurchase?.value ?? 0,
+            });
+          }
+          if (paymentIntentId) {
+            sessionStorage.removeItem(`sobre_meta_purchase_tracked:${paymentIntentId}`);
+          }
           clearPendingPurchase();
           capturePostHogEventOnce(
             posthog,

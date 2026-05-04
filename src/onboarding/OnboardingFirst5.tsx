@@ -61,6 +61,12 @@ type Answers = {
 
 type CheckoutPlan = "week" | "month" | "year";
 
+const CHECKOUT_PLAN_PRICES: Record<CheckoutPlan, number> = {
+  week: 6.99,
+  month: 12.99,
+  year: 39.99,
+};
+
 type PreparedCheckout = {
   key: string;
   clientSecret: string;
@@ -2920,6 +2926,8 @@ const CustomTrialReminder: React.FC<
   const trialMainRef = useRef<HTMLDivElement | null>(null);
   const pricingSectionRef = useRef<HTMLElement | null>(null);
   const inlinePaymentRef = useRef<HTMLDivElement | null>(null);
+  const hasTrackedInitiateCheckoutRef = useRef(false);
+  const hasTrackedPurchaseRef = useRef(false);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -2955,7 +2963,34 @@ const CustomTrialReminder: React.FC<
   const offerLevel = "50";
   const normalizedCheckoutEmail = checkoutEmail.trim().toLowerCase();
   const isCheckoutEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedCheckoutEmail);
+  const selectedPlanPrice = CHECKOUT_PLAN_PRICES[selectedPlan];
 
+  const trackInitiateCheckoutOnce = () => {
+    if (hasTrackedInitiateCheckoutRef.current) return;
+    hasTrackedInitiateCheckoutRef.current = true;
+    trackMetaEvent("InitiateCheckout", {
+      content_name: "SOBRE Premium",
+      content_type: "product",
+      currency: "EUR",
+      value: selectedPlanPrice,
+    });
+  };
+
+  const trackPurchaseOnce = (paymentIntentId: string) => {
+    if (hasTrackedPurchaseRef.current) return;
+    hasTrackedPurchaseRef.current = true;
+    trackMetaEventOnce(`Purchase:${paymentIntentId}`, "Purchase", {
+      content_name: "SOBRE Premium",
+      content_type: "product",
+      currency: "EUR",
+      value: selectedPlanPrice,
+    });
+    try {
+      sessionStorage.setItem(`sobre_meta_purchase_tracked:${paymentIntentId}`, "1");
+    } catch {
+      // Ignore storage failures; the in-memory guard still prevents duplicate firing before redirect.
+    }
+  };
 
   const handlePlanChange = (plan: CheckoutPlan) => {
     if (plan === selectedPlan) return;
@@ -2977,7 +3012,7 @@ const CustomTrialReminder: React.FC<
   };
 
   const handleBeforePayment = () => {
-    const purchaseValue = selectedPlan === "week" ? 6.99 : selectedPlan === "month" ? 12.99 : 39.99;
+    const purchaseValue = selectedPlanPrice;
     savePendingPurchase({ value: purchaseValue, currency: "EUR" });
     savePendingCheckout({
       currency: "EUR",
@@ -2995,10 +3030,7 @@ const CustomTrialReminder: React.FC<
         price: purchaseValue,
       })
     );
-    trackMetaEvent("InitiateCheckout", {
-      currency: "EUR",
-      value: purchaseValue,
-    });
+    trackInitiateCheckoutOnce();
   };
 
   const handleActivate = () => {
@@ -3011,6 +3043,7 @@ const CustomTrialReminder: React.FC<
       return;
     }
 
+    trackInitiateCheckoutOnce();
     setIsPreparingCheckout(true);
     console.log("[handleActivate] selectedPlan:", selectedPlan, "offer:", offerLevel);
     void prepareCheckout({ email: normalizedCheckoutEmail, plan: selectedPlan, offer: offerLevel })
@@ -3332,6 +3365,7 @@ const CustomTrialReminder: React.FC<
                 <StripePaymentForm
                   clientSecret={preparedCheckout.clientSecret}
                   onBeforePayment={handleBeforePayment}
+                  onPaymentSuccess={trackPurchaseOnce}
                   onPaymentError={(msg) => setPaymentError(msg)}
                 />
                 {paymentError && (
