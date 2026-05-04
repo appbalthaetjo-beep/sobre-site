@@ -132,8 +132,8 @@ async function getOrCreateSupabaseUserByEmail(email) {
 }
 
 function getPriceId({ plan, offer }) {
-  if (plan === "week"  && offer === "50") return process.env.PRICE_WEEK_50;
-  if (plan === "week"  && offer === "60") return process.env.PRICE_WEEK_60;
+  if (plan === "week"  && offer === "50") return process.env.PRICE_MONTH_50;
+  if (plan === "week"  && offer === "60") return process.env.PRICE_MONTH_60;
   if (plan === "month" && offer === "50") return process.env.PRICE_MONTH_50;
   if (plan === "month" && offer === "60") return process.env.PRICE_MONTH_60;
   if (plan === "year"  && offer === "50") return process.env.PRICE_YEAR_50;
@@ -300,6 +300,33 @@ app.post("/api/create-payment-intent", async (req, res) => {
             email: normalizedEmail,
             metadata: { app_user_id: appUserId, auth_email: normalizedEmail },
           });
+
+    if (plan === "week") {
+      const subscription = await stripe.subscriptions.create({
+        customer: stripeCustomer.id,
+        items: [{ price: priceId }],
+        trial_period_days: 7,
+        payment_settings: { save_default_payment_method: "on_subscription" },
+        metadata: { app_user_id: appUserId, auth_email: normalizedEmail, plan, offer },
+      });
+
+      const trialPaymentIntent = await stripe.paymentIntents.create({
+        amount: 699,
+        currency: "eur",
+        customer: stripeCustomer.id,
+        description: "Essai 7 jours SOBRE",
+        setup_future_usage: "off_session",
+        metadata: { app_user_id: appUserId, auth_email: normalizedEmail, plan, offer, subscription_id: subscription.id },
+      });
+
+      return res.json({
+        client_secret: trialPaymentIntent.client_secret,
+        subscription_id: subscription.id,
+        customer_id: stripeCustomer.id,
+        app_user_id: appUserId,
+        auth_email: normalizedEmail,
+      });
+    }
 
     const subscription = await stripe.subscriptions.create({
       customer: stripeCustomer.id,
