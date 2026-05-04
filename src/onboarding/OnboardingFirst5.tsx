@@ -3042,7 +3042,7 @@ const CustomTrialReminder: React.FC<
               <div className="onb-paywall-timer-sublabel">minutes&nbsp;&nbsp;&nbsp;secondes</div>
             </div>
             <button type="button" className="onb-paywall-timer-cta" onClick={handleActivate}>
-              ACTIVER MON PLAN SOBRE
+              ACTIVER MON PLAN
             </button>
           </div>
         </section>
