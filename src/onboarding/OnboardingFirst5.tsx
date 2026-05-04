@@ -3330,18 +3330,12 @@ const CustomTrialReminder: React.FC<
           </div>
         )}
 
-      </div>
-
-      <div className="onb-paywall-cta-wrap">
-        <button type="button" className="onb-btn-cream onb-trial-btn" onClick={handleActivate}>
-          Activer mon plan SOBRE
-        </button>
-        <p style={{ fontSize: 11, color: "#888", textAlign: "center", maxWidth: 320, margin: "8px auto 0", padding: "0 16px", lineHeight: 1.5 }}>
+        <p style={{ fontSize: 11, color: "#888", textAlign: "center", maxWidth: 320, margin: "24px auto 16px", padding: "0 16px", lineHeight: 1.5 }}>
           {selectedPlan === "week"
-            ? "Sans annulation avant la fin des 7 jours d'essai, j'accepte que SOBRE facture automatiquement 12,99 €/mois jusqu'à résiliation."
+            ? "Sans annulation avant la fin des 7 jours d'essai, j'accepte que SOBRE facture automatiquement 12,99 €/mois jusqu'à résiliation."
             : selectedPlan === "month"
-            ? "Sans annulation, j'accepte que SOBRE facture automatiquement 12,99 €/mois jusqu'à résiliation."
-            : "Sans annulation, j'accepte que SOBRE facture automatiquement 39,99 €/an jusqu'à résiliation."}
+            ? "Sans annulation, j'accepte que SOBRE facture automatiquement 12,99 €/mois jusqu'à résiliation."
+            : "Sans annulation, j'accepte que SOBRE facture automatiquement 39,99 €/an jusqu'à résiliation."}
         </p>
       </div>
     </div>
