@@ -3149,7 +3149,6 @@ const CustomTrialReminder: React.FC<
                 <strong>7 jours d'essai</strong>
                 <span className="onb-plan-sublabel">ESSAI 7 JOURS</span>
                 <span className="onb-plan-reduction"><s>9,99 €</s> → 6,99 €</span>
-                <span className="onb-plan-sublabel" style={{ marginTop: 2, opacity: 0.7 }}>puis 12,99 €/mois · Annulation à tout moment</span>
               </div>
               <div className="onb-plan-price">
                 <span className="onb-plan-orig">1,43 €</span>
@@ -3258,7 +3257,6 @@ const CustomTrialReminder: React.FC<
                 <strong>7 jours d&apos;essai</strong>
                 <span className="onb-plan-sublabel">ESSAI 7 JOURS</span>
                 <span className="onb-plan-reduction"><s>9,99 €</s> → 6,99 €</span>
-                <span className="onb-plan-sublabel" style={{ marginTop: 2, opacity: 0.7 }}>puis 12,99 €/mois · Annulation à tout moment</span>
               </div>
               <div className="onb-plan-price">
                 <span className="onb-plan-orig">1,43 €</span>
@@ -3338,7 +3336,13 @@ const CustomTrialReminder: React.FC<
         <button type="button" className="onb-btn-cream onb-trial-btn" onClick={handleActivate}>
           Activer mon plan SOBRE
         </button>
-        <p className="onb-paywall-legal">Annulation à tout moment · Accès immédiat</p>
+        <p style={{ fontSize: 11, color: "#888", textAlign: "center", maxWidth: 320, margin: "8px auto 0", padding: "0 16px", lineHeight: 1.5 }}>
+          {selectedPlan === "week"
+            ? "Sans annulation avant la fin des 7 jours d'essai, j'accepte que SOBRE facture automatiquement 12,99 €/mois jusqu'à résiliation."
+            : selectedPlan === "month"
+            ? "Sans annulation, j'accepte que SOBRE facture automatiquement 12,99 €/mois jusqu'à résiliation."
+            : "Sans annulation, j'accepte que SOBRE facture automatiquement 39,99 €/an jusqu'à résiliation."}
+        </p>
       </div>
     </div>
   );
