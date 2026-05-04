@@ -302,22 +302,38 @@ app.post("/api/create-payment-intent", async (req, res) => {
           });
 
     if (plan === "week") {
-      // Add a 6,99€ one-time fee as a pending invoice item.
-      // Stripe bundles pending items into the first invoice of the subscription,
-      // so the customer pays 6,99€ now and is auto-billed monthly after the trial.
-      await stripe.invoiceItems.create({
+      // Weekly trial: create the subscription in trial mode, then charge 6,99€
+      // via a standalone PaymentIntent. This avoids relying on latest_invoice.payment_intent
+      // which can be null when Stripe generates a zero-amount trial invoice.
+      const subscription = await stripe.subscriptions.create({
         customer: stripeCustomer.id,
+        items: [{ price: priceId }],
+        trial_period_days: 7,
+        payment_settings: { save_default_payment_method: "on_subscription" },
+        metadata: { app_user_id: appUserId, auth_email: normalizedEmail, plan, offer },
+      });
+      console.log("[week-subscription] status:", subscription.status, "| trial_end:", subscription.trial_end);
+
+      const trialPaymentIntent = await stripe.paymentIntents.create({
         amount: 699,
         currency: "eur",
-        description: "Essai 7 jours SOBRE",
-        metadata: { plan, offer, app_user_id: appUserId },
+        customer: stripeCustomer.id,
+        setup_future_usage: "off_session",
+        metadata: { app_user_id: appUserId, auth_email: normalizedEmail, plan, offer, subscription_id: subscription.id },
+      });
+
+      return res.json({
+        client_secret: trialPaymentIntent.client_secret,
+        subscription_id: subscription.id,
+        customer_id: stripeCustomer.id,
+        app_user_id: appUserId,
+        auth_email: normalizedEmail,
       });
     }
 
     const subscription = await stripe.subscriptions.create({
       customer: stripeCustomer.id,
       items: [{ price: priceId }],
-      ...(plan === "week" ? { trial_period_days: 7 } : {}),
       payment_behavior: "default_incomplete",
       payment_settings: { save_default_payment_method: "on_subscription" },
       expand: ["latest_invoice.payment_intent"],
@@ -325,12 +341,6 @@ app.post("/api/create-payment-intent", async (req, res) => {
     });
 
     const invoice = subscription.latest_invoice;
-    if (plan === "week") {
-      console.log("[week-subscription] status:", subscription.status);
-      console.log("[week-subscription] trial_end:", subscription.trial_end);
-      console.log("[week-subscription] invoice.amount_due:", typeof invoice === "object" && invoice ? invoice.amount_due : "(no invoice)");
-      console.log("[week-subscription] invoice.status:", typeof invoice === "object" && invoice ? invoice.status : "(no invoice)");
-    }
     if (typeof invoice !== "object" || !invoice) {
       return res.status(500).json({ error: "Facture Stripe introuvable" });
     }
