@@ -325,6 +325,12 @@ app.post("/api/create-payment-intent", async (req, res) => {
     });
 
     const invoice = subscription.latest_invoice;
+    if (plan === "week") {
+      console.log("[week-subscription] status:", subscription.status);
+      console.log("[week-subscription] trial_end:", subscription.trial_end);
+      console.log("[week-subscription] invoice.amount_due:", typeof invoice === "object" && invoice ? invoice.amount_due : "(no invoice)");
+      console.log("[week-subscription] invoice.status:", typeof invoice === "object" && invoice ? invoice.status : "(no invoice)");
+    }
     if (typeof invoice !== "object" || !invoice) {
       return res.status(500).json({ error: "Facture Stripe introuvable" });
     }
