@@ -2973,7 +2973,7 @@ const CustomTrialReminder: React.FC<
   };
 
   const handleBeforePayment = () => {
-    const purchaseValue = selectedPlan === "month" ? 9.99 : 29.99;
+    const purchaseValue = selectedPlan === "week" ? 6.99 : selectedPlan === "month" ? 12.99 : 39.99;
     savePendingPurchase({ value: purchaseValue, currency: "EUR" });
     savePendingCheckout({
       currency: "EUR",
