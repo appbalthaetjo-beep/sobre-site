@@ -3032,21 +3032,21 @@ const CustomTrialReminder: React.FC<
         <div className="onb-header-spacer" />
       </div>
 
-      <div className="onb-trial-main" ref={trialMainRef}>
-        <section className="onb-paywall-timer-wrap">
-          <div className="onb-paywall-timer-row">
-            <div className="onb-paywall-timer-block">
-              <div className="onb-paywall-timer">
-                <span>{minutes}</span>:<span>{seconds}</span>
-              </div>
-              <div className="onb-paywall-timer-sublabel">minutes&nbsp;&nbsp;&nbsp;secondes</div>
+      <section className="onb-paywall-timer-wrap">
+        <div className="onb-paywall-timer-row">
+          <div className="onb-paywall-timer-block">
+            <div className="onb-paywall-timer">
+              <span>{minutes}</span>:<span>{seconds}</span>
             </div>
-            <button type="button" className="onb-paywall-timer-cta" onClick={handleActivate}>
-              ACTIVER MON PLAN
-            </button>
+            <div className="onb-paywall-timer-sublabel">minutes&nbsp;&nbsp;&nbsp;secondes</div>
           </div>
-        </section>
+          <button type="button" className="onb-paywall-timer-cta" onClick={handleActivate}>
+            ACTIVER MON PLAN
+          </button>
+        </div>
+      </section>
 
+      <div className="onb-trial-main" ref={trialMainRef}>
         <section className="onb-compare-betterme">
           <div className="onb-compare-tabs">
             <span className="onb-compare-tab">Maintenant</span>
