@@ -2791,6 +2791,16 @@
   flex-direction: column;
   position: relative;
   background: #050505;
+  /* override onb-screen safe-area top padding; fixed timer covers that area */
+  padding-top: 0;
+}
+
+/* spacer that reserves exactly the height of the fixed timer bar */
+.onb-trial-screen > .onb-question-header {
+  height: 66px;
+  min-height: 66px;
+  padding: 0;
+  display: block;
 }
 
 .onb-trial-main {
@@ -2803,12 +2813,14 @@
 }
 
 .onb-paywall-timer-wrap {
-  width: 100%;
-  z-index: 100;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
   background: #050505;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   padding: 10px 16px;
-  flex-shrink: 0;
 }
 
 .onb-paywall-timer-wrap::before,
