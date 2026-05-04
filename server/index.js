@@ -40,6 +40,58 @@ app.use(
     },
   }),
 );
+// Webhook must be registered before express.json() — Stripe requires the raw body for signature verification.
+app.post("/api/stripe/webhook", express.raw({ type: "application/json" }), async (req, res) => {
+  const sig = req.headers["stripe-signature"];
+  const webhookSecret = String(process.env.STRIPE_WEBHOOK_SECRET || "").trim();
+
+  if (!webhookSecret) {
+    console.error("[webhook] STRIPE_WEBHOOK_SECRET manquante");
+    return res.status(500).send("Webhook secret manquant");
+  }
+
+  let event;
+  try {
+    event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+  } catch (err) {
+    console.error("[webhook] Signature invalide:", err.message);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
+
+  if (event.type === "payment_intent.succeeded") {
+    const pi = event.data.object;
+
+    if (pi.metadata?.plan === "week") {
+      const customerId = typeof pi.customer === "string" ? pi.customer : pi.customer?.id;
+      const appUserId = String(pi.metadata.app_user_id || "").trim();
+      const authEmail = String(pi.metadata.auth_email || "").trim();
+      const offer = String(pi.metadata.offer || "50").trim();
+      const priceId = getPriceId({ plan: "month", offer });
+
+      if (!priceId) {
+        console.error("[webhook] priceId introuvable pour week, offer:", offer);
+        return res.status(500).json({ error: "priceId introuvable" });
+      }
+
+      try {
+        const subscription = await stripe.subscriptions.create({
+          customer: customerId,
+          items: [{ price: priceId }],
+          trial_period_days: 7,
+          payment_settings: { save_default_payment_method: "on_subscription" },
+          metadata: { app_user_id: appUserId, auth_email: authEmail, plan: "week", offer },
+        });
+        console.log("[webhook] week subscription created:", subscription.id, "customer:", customerId);
+      } catch (err) {
+        console.error("[webhook] Erreur creation subscription week:", err.message);
+        return res.status(500).json({ error: err.message });
+      }
+    }
+  }
+
+  res.json({ received: true });
+});
+
 app.use(express.json());
 
 console.log("index.js loaded");
@@ -302,26 +354,20 @@ app.post("/api/create-payment-intent", async (req, res) => {
           });
 
     if (plan === "week") {
-      const subscription = await stripe.subscriptions.create({
-        customer: stripeCustomer.id,
-        items: [{ price: priceId }],
-        trial_period_days: 7,
-        payment_settings: { save_default_payment_method: "on_subscription" },
-        metadata: { app_user_id: appUserId, auth_email: normalizedEmail, plan, offer },
-      });
-
+      // Subscription is created later in the webhook (payment_intent.succeeded)
+      // so RevenueCat only sees confirmed paid subscriptions, not abandoned checkouts.
       const trialPaymentIntent = await stripe.paymentIntents.create({
         amount: 699,
         currency: "eur",
         customer: stripeCustomer.id,
         description: "Essai 7 jours SOBRE",
         setup_future_usage: "off_session",
-        metadata: { app_user_id: appUserId, auth_email: normalizedEmail, plan, offer, subscription_id: subscription.id },
+        metadata: { app_user_id: appUserId, auth_email: normalizedEmail, plan, offer },
       });
 
       return res.json({
         client_secret: trialPaymentIntent.client_secret,
-        subscription_id: subscription.id,
+        subscription_id: null,
         customer_id: stripeCustomer.id,
         app_user_id: appUserId,
         auth_email: normalizedEmail,
