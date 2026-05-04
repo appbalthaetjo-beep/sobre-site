@@ -2524,9 +2524,13 @@ const CustomFreeTrial: React.FC<CustomProps> = ({ goBack, goNext, answers }) => 
 
           <div className="onb-offer-card onb-offer-card-pop">
             <div className="onb-offer-card-main">50%</div>
-            <div className="onb-offer-card-sub">OFF</div>
-            <div className="onb-offer-card-foot">OFFRE LIMITEE</div>
-            <div className="onb-offer-card-code">CODE_PROMO : {promoCode}</div>
+            <div className="onb-offer-card-sub">de réduction</div>
+            <div className="onb-offer-card-foot">sur votre Plan SOBRE</div>
+            <div className="onb-offer-card-divider" />
+            <div className="onb-offer-card-code">
+              <span>Code promo</span>
+              <strong>✓ {promoCode}</strong>
+            </div>
             <span className="onb-offer-spark onb-offer-spark-1" />
             <span className="onb-offer-spark onb-offer-spark-2" />
             <span className="onb-offer-spark onb-offer-spark-3" />
@@ -3024,6 +3028,15 @@ const CustomTrialReminder: React.FC<
     }, 150);
   };
 
+  const PaywallInlineCta = () => (
+    <div className="onb-paywall-inline-cta">
+      <button type="button" className="onb-paywall-inline-cta-btn" onClick={handleActivate}>
+        ACTIVER MON PLAN SOBRE
+      </button>
+      <p>Annulation à tout moment</p>
+    </div>
+  );
+
   return (
     <div className="onb-screen onb-black onb-trial-screen">
       <div className="onb-question-header">
@@ -3108,6 +3121,8 @@ const CustomTrialReminder: React.FC<
             ))}
           </div>
         </section>
+
+        <PaywallInlineCta />
 
         <h2 className="onb-paywall-title">
           Ton plan SOBRE personnalisé est prêt !
@@ -3195,6 +3210,8 @@ const CustomTrialReminder: React.FC<
             </article>
 
           </div>
+
+          <PaywallInlineCta />
         </section>
 
         {/* ── APERCU APP ── */}
@@ -3304,6 +3321,8 @@ const CustomTrialReminder: React.FC<
 
           </div>
         </section>
+
+        <PaywallInlineCta />
 
         {/* ── FORMULAIRE STRIPE INLINE ── */}
         {showInlinePayment && (

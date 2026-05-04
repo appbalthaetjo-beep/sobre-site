@@ -2393,26 +2393,42 @@
 
 .onb-offer-card {
   width: min(300px, 90vw);
-  aspect-ratio: 1 / 1;
+  min-height: 388px;
   margin-top: 24px;
-  border: 1px solid rgba(183, 198, 255, 0.44);
+  border: 0;
   border-radius: 24px;
-  background:
-    linear-gradient(155deg, rgba(111, 136, 255, 0.34), rgba(72, 101, 236, 0.24) 52%, rgba(57, 44, 170, 0.28)),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.04));
-  display: grid;
-  place-items: center;
-  align-content: center;
-  color: rgba(244, 247, 255, 0.97);
-  backdrop-filter: blur(10px) saturate(140%);
-  -webkit-backdrop-filter: blur(10px) saturate(140%);
+  background: #D87D2F;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: rgba(255, 255, 255, 0.96);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.4),
-    inset 0 -14px 26px rgba(48, 36, 148, 0.3),
-    0 20px 40px rgba(0, 0, 0, 0.5),
-    0 0 0 1px rgba(171, 188, 255, 0.24) inset;
+    inset 0 0 0 1px rgba(255, 255, 255, 0.12),
+    0 22px 44px rgba(0, 0, 0, 0.52);
   position: relative;
   overflow: visible;
+  padding: 30px 14px 16px;
+}
+
+.onb-offer-card::before,
+.onb-offer-card::after {
+  content: "";
+  position: absolute;
+  top: 70%;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: #0b0b0c;
+  transform: translateY(-50%);
+  z-index: 2;
+}
+
+.onb-offer-card::before {
+  left: -12px;
+}
+
+.onb-offer-card::after {
+  right: -12px;
 }
 
 .onb-offer-card-pop {
@@ -2420,47 +2436,66 @@
 }
 
 .onb-offer-card-main {
-  font-size: clamp(82px, 18vw, 120px);
-  line-height: 0.95;
+  font-size: clamp(84px, 20vw, 112px);
+  line-height: 0.9;
   font-weight: 800;
 }
 
 .onb-offer-card-sub {
-  margin-top: 6px;
-  font-size: 34px;
+  margin-top: 12px;
+  font-size: 28px;
   line-height: 1;
   font-weight: 800;
-  letter-spacing: 1px;
+  letter-spacing: 0;
 }
 
 .onb-offer-card-foot {
-  margin-top: 14px;
-  font-size: 12px;
+  margin-top: 8px;
+  max-width: 190px;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 18px;
   font-weight: 700;
-  letter-spacing: 0.8px;
+  line-height: 1.22;
+  letter-spacing: 0;
+}
+
+.onb-offer-card-divider {
+  width: calc(100% - 18px);
+  margin: auto 0 12px;
+  border-top: 3px dashed rgba(14, 14, 14, 0.78);
 }
 
 .onb-offer-card-code {
-  margin-top: 10px;
-  border: 1px solid rgba(205, 217, 255, 0.45);
-  border-radius: 999px;
-  padding: 6px 12px;
-  background: rgba(16, 24, 64, 0.32);
-  color: rgba(238, 244, 255, 0.95);
-  font-size: 11px;
+  width: 100%;
+  min-height: 70px;
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: #050505;
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.onb-offer-card-code span {
+  color: rgba(255, 255, 255, 0.74);
+  font-size: 16px;
+  line-height: 1;
+  font-weight: 500;
+}
+
+.onb-offer-card-code strong {
+  color: #ffffff;
+  font-size: 18px;
   line-height: 1;
   font-weight: 800;
-  letter-spacing: 0.6px;
+  letter-spacing: 0.1px;
 }
 
 .onb-offer-spark {
-  position: absolute;
-  width: 14px;
-  height: 14px;
-  border-radius: 999px;
-  background: rgba(225, 234, 255, 0.95);
-  box-shadow: 0 0 16px rgba(137, 160, 255, 0.75);
-  animation: onb-offer-spark 1.4s ease-in-out infinite;
+  display: none;
 }
 
 .onb-offer-spark-1 {
@@ -3844,6 +3879,57 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+.onb-paywall-inline-cta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin: 4px 0 8px;
+}
+
+.onb-pricing-new .onb-paywall-inline-cta {
+  margin: 8px 0 2px;
+}
+
+.onb-paywall-inline-cta-btn {
+  width: 100%;
+  min-height: 56px;
+  border: 0;
+  border-radius: 999px;
+  padding: 0 20px;
+  background: #EDE3D3;
+  color: #111111;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.38);
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 900;
+  letter-spacing: 0.3px;
+  line-height: 1.1;
+  text-align: center;
+  white-space: nowrap;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.onb-paywall-inline-cta-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.46);
+}
+
+.onb-paywall-inline-cta-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 5px 14px rgba(0, 0, 0, 0.34);
+}
+
+.onb-paywall-inline-cta p {
+  margin: 0;
+  color: rgba(243, 235, 221, 0.72);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.25;
+  text-align: center;
 }
 
 .onb-plan {
